@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.ebpf.dsl.types.BpfScalarTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-02-25T01:23:14.775Z" hostname="jongsuui-MacBookAir.local" time="0.007">
+  <properties/>
+  <testcase name="S64 has size 8, signed, cName __s64()" classname="dev.ebpf.dsl.types.BpfScalarTest" time="0.001"/>
+  <testcase name="all 9 scalars have distinct cNames()" classname="dev.ebpf.dsl.types.BpfScalarTest" time="0.005"/>
+  <testcase name="alignment equals size for all scalars()" classname="dev.ebpf.dsl.types.BpfScalarTest" time="0.0"/>
+  <testcase name="Bool has size 1, cName bool()" classname="dev.ebpf.dsl.types.BpfScalarTest" time="0.001"/>
+  <testcase name="U8 has size 1, unsigned, cName __u8()" classname="dev.ebpf.dsl.types.BpfScalarTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
