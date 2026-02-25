@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.ebpf.dsl.validation.SemanticAnalyzerTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:14:17.451Z" hostname="jongsuui-MacBookAir.local" time="0.005">
+  <properties/>
+  <testcase name="unreachable code after return()" classname="dev.ebpf.dsl.validation.SemanticAnalyzerTest" time="0.001"/>
+  <testcase name="hash map with high max entries warns()" classname="dev.ebpf.dsl.validation.SemanticAnalyzerTest" time="0.0"/>
+  <testcase name="valid program passes()" classname="dev.ebpf.dsl.validation.SemanticAnalyzerTest" time="0.0"/>
+  <testcase name="no unreachable code when return is last()" classname="dev.ebpf.dsl.validation.SemanticAnalyzerTest" time="0.0"/>
+  <testcase name="stack usage within limit passes()" classname="dev.ebpf.dsl.validation.SemanticAnalyzerTest" time="0.0"/>
+  <testcase name="division by literal does not warn()" classname="dev.ebpf.dsl.validation.SemanticAnalyzerTest" time="0.001"/>
+  <testcase name="lru hash does not warn()" classname="dev.ebpf.dsl.validation.SemanticAnalyzerTest" time="0.0"/>
+  <testcase name="stack overflow detected()" classname="dev.ebpf.dsl.validation.SemanticAnalyzerTest" time="0.0"/>
+  <testcase name="division by variable warns()" classname="dev.ebpf.dsl.validation.SemanticAnalyzerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

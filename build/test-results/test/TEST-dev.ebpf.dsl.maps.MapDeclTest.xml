@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.ebpf.dsl.maps.MapDeclTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:12:57.859Z" hostname="jongsuui-MacBookAir.local" time="0.003">
+<testsuite name="dev.ebpf.dsl.maps.MapDeclTest" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:14:17.431Z" hostname="jongsuui-MacBookAir.local" time="0.003">
   <properties/>
-  <testcase name="stack trace supports getStackId()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
+  <testcase name="stack trace supports getStackId()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.001"/>
   <testcase name="ring buffer supports reserve and submit()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
   <testcase name="C map type constant is correct()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
-  <testcase name="array key must be U32()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.001"/>
+  <testcase name="array key must be U32()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
   <testcase name="lru hash supports lookupOrInit()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
   <testcase name="max entries must be positive()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
   <testcase name="ringbuf max entries must be power of 2()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
   <testcase name="hash map supports lookup, update, delete()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
   <testcase name="array map does not support delete()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
   <testcase name="perf event array supports output()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
-  <testcase name="map name over 15 chars throws()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.001"/>
+  <testcase name="map name over 15 chars throws()" classname="dev.ebpf.dsl.maps.MapDeclTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
 </testsuite>
