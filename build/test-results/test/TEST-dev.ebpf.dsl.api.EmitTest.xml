@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.ebpf.dsl.api.EmitTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:21:50.448Z" hostname="jongsuui-MacBookAir.local" time="0.021">
+  <properties/>
+  <testcase name="emit writes C and Kotlin files(Path)" classname="dev.ebpf.dsl.api.EmitTest" time="0.018"/>
+  <testcase name="generateKotlin returns Kotlin source string()" classname="dev.ebpf.dsl.api.EmitTest" time="0.001"/>
+  <testcase name="generateC returns C source string()" classname="dev.ebpf.dsl.api.EmitTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
