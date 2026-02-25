@@ -8,6 +8,7 @@ import dev.ebpf.dsl.types.*
 class KotlinCodeGenerator(
     private val model: BpfProgramModel,
     private val packageName: String,
+    private val bridgeImport: String? = null,
 ) {
     // Maps that have both key and value types (skip ringbuf, perf_event_array, etc.)
     private val readableMaps: List<MapDecl> by lazy {
@@ -33,6 +34,9 @@ class KotlinCodeGenerator(
         sb.appendLine()
         sb.appendLine("import java.nio.ByteBuffer")
         sb.appendLine("import java.nio.ByteOrder")
+        if (bridgeImport != null) {
+            sb.appendLine("import $bridgeImport")
+        }
         sb.appendLine()
 
         val className = buildClassName(model.name)
@@ -212,7 +216,9 @@ class KotlinCodeGenerator(
         sb.appendLine("        val entries = bridge.mapBatchLookupAndDelete(")
         sb.appendLine("            mapFd, $keyLayout.SIZE, $valueLayout.SIZE, maxEntries")
         sb.appendLine("        )")
-        sb.appendLine("        return entries.map { (key, value) ->")
+        sb.appendLine("        return entries.map { entry ->")
+        sb.appendLine("            val key = entry.first")
+        sb.appendLine("            val value = entry.second")
         sb.appendLine("            $dataClassName(")
 
         // Key fields

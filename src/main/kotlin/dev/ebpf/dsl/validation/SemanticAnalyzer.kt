@@ -48,7 +48,10 @@ class SemanticAnalyzer(private val model: BpfProgramModel) {
                     stmt.elseIfs.forEach { collectStackUsage(it.second, accumulator) }
                     stmt.else_?.let { collectStackUsage(it, accumulator) }
                 }
-                is BpfStmt.IfNonNull -> collectStackUsage(stmt.body, accumulator)
+                is BpfStmt.IfNonNull -> {
+                    collectStackUsage(stmt.body, accumulator)
+                    stmt.else_?.let { collectStackUsage(it, accumulator) }
+                }
                 is BpfStmt.BoundedLoop -> collectStackUsage(stmt.body, accumulator)
                 else -> {}
             }
@@ -74,7 +77,10 @@ class SemanticAnalyzer(private val model: BpfProgramModel) {
                     stmt.elseIfs.forEach { checkUnreachableCode(it.second, programName) }
                     stmt.else_?.let { checkUnreachableCode(it, programName) }
                 }
-                is BpfStmt.IfNonNull -> checkUnreachableCode(stmt.body, programName)
+                is BpfStmt.IfNonNull -> {
+                    checkUnreachableCode(stmt.body, programName)
+                    stmt.else_?.let { checkUnreachableCode(it, programName) }
+                }
                 is BpfStmt.BoundedLoop -> checkUnreachableCode(stmt.body, programName)
                 else -> {}
             }
@@ -131,6 +137,7 @@ class SemanticAnalyzer(private val model: BpfProgramModel) {
                 is BpfStmt.IfNonNull -> {
                     walkExpr(stmt.expr, programName, visitor)
                     walkExprs(stmt.body, programName, visitor)
+                    stmt.else_?.let { walkExprs(it, programName, visitor) }
                 }
                 is BpfStmt.BoundedLoop -> {
                     walkExpr(stmt.count, programName, visitor)

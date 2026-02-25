@@ -16,6 +16,7 @@ fun ebpf(name: String, block: EbpfProgramBuilder.() -> Unit): BpfProgramModel {
 
 class EbpfProgramBuilder(private val name: String) {
     private var _license: String? = null
+    private var _preamble: String? = null
     private val _maps = mutableListOf<MapDecl>()
     private val _mapNames = mutableSetOf<String>()
     private val _programs = mutableListOf<ProgramDef>()
@@ -23,6 +24,10 @@ class EbpfProgramBuilder(private val name: String) {
 
     fun license(license: String) {
         _license = license
+    }
+
+    fun preamble(code: String) {
+        _preamble = code
     }
 
     // ── Map delegate factories ──────────────────────────────────────────
@@ -44,6 +49,31 @@ class EbpfProgramBuilder(private val name: String) {
 
     fun ringBuf(maxEntries: Int, mapName: String? = null) =
         MapDelegate(MapType.RINGBUF, null, null, maxEntries, mapName)
+
+    // ── Scalar map delegate factories ───────────────────────────────────
+
+    fun scalarHashMap(keyType: BpfScalar, valueType: BpfScalar, maxEntries: Int, mapName: String? = null) =
+        ScalarMapDelegate(MapType.HASH, keyType, valueType, maxEntries, mapName)
+
+    fun scalarLruHashMap(keyType: BpfScalar, valueType: BpfScalar, maxEntries: Int, mapName: String? = null) =
+        ScalarMapDelegate(MapType.LRU_HASH, keyType, valueType, maxEntries, mapName)
+
+    inner class ScalarMapDelegate(
+        private val type: MapType,
+        private val keyType: BpfScalar,
+        private val valueType: BpfScalar,
+        private val maxEntries: Int,
+        private val explicitName: String?,
+    ) {
+        operator fun provideDelegate(thisRef: Any?, prop: KProperty<*>): ReadOnlyProperty<Any?, MapHandle> {
+            val mapName = explicitName ?: BpfStruct.camelToSnake(prop.name)
+            require(_mapNames.add(mapName)) { "Duplicate map name: '$mapName'" }
+            val decl = MapDecl(mapName, type, keyType, valueType, maxEntries)
+            _maps.add(decl)
+            val handle = MapHandle(decl)
+            return ReadOnlyProperty { _, _ -> handle }
+        }
+    }
 
     inner class MapDelegate(
         private val type: MapType,
@@ -130,6 +160,7 @@ class EbpfProgramBuilder(private val name: String) {
         maps = _maps.toList(),
         programs = _programs.toList(),
         structs = _structs.toSet(),
+        preamble = _preamble,
     )
 
     companion object {

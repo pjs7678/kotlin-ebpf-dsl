@@ -17,4 +17,5 @@ data class BpfProgramModel(
     val maps: List<MapDecl>,
     val programs: List<ProgramDef>,
     val structs: Set<BpfStruct>,
+    val preamble: String? = null,
 )

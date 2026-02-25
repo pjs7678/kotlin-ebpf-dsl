@@ -130,7 +130,7 @@ class ProgramBodyBuilder(
 
     // ── Control flow ────────────────────────────────────────────────────
 
-    fun ifNonNull(expr: ExprHandle, block: (ExprHandle) -> Unit) {
+    fun ifNonNull(expr: ExprHandle, block: (ExprHandle) -> Unit): IfNonNullBuilder {
         val v = Variable("entry_${varCounter++}", expr.type, false)
         val savedStmts = stmts.toList()
         stmts.clear()
@@ -140,6 +140,28 @@ class ProgramBodyBuilder(
         stmts.clear()
         stmts.addAll(savedStmts)
         addStmt(BpfStmt.IfNonNull(expr.expr, v, bodyStmts))
+        return IfNonNullBuilder(v, bodyStmts, expr.expr, this)
+    }
+
+    class IfNonNullBuilder(
+        private val variable: Variable,
+        private val body: List<BpfStmt>,
+        private val expr: BpfExpr,
+        private val builder: ProgramBodyBuilder,
+    ) {
+        fun elseThen(block: () -> Unit) {
+            val saved = builder.stmts.toList()
+            builder.stmts.clear()
+            block()
+            val elseStmts = builder.stmts.toList()
+            builder.stmts.clear()
+            builder.stmts.addAll(saved)
+            // Replace last IfNonNull with version that has else
+            val lastIndex = builder.stmts.indexOfLast { it is BpfStmt.IfNonNull }
+            if (lastIndex >= 0) {
+                builder.stmts[lastIndex] = BpfStmt.IfNonNull(expr, variable, body, elseStmts)
+            }
+        }
     }
 
     fun ifThen(cond: ExprHandle, block: () -> Unit): IfBuilder {
@@ -239,6 +261,15 @@ class ProgramBodyBuilder(
     val XDP_TX = 3
     @Suppress("PropertyName")
     val XDP_REDIRECT = 4
+
+    // ── BPF map update flag constants ───────────────────────────────────
+
+    @Suppress("PropertyName")
+    val BPF_ANY = 0L
+    @Suppress("PropertyName")
+    val BPF_NOEXIST = 1L
+    @Suppress("PropertyName")
+    val BPF_EXIST = 2L
 
     // ── Raw escape hatch ────────────────────────────────────────────────
 

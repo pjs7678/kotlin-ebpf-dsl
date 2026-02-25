@@ -41,6 +41,7 @@ class TypeChecker(private val model: BpfProgramModel) {
             is BpfStmt.IfNonNull -> {
                 checkExpr(stmt.expr, program)
                 stmt.body.forEach { checkStmt(it, program) }
+                stmt.else_?.forEach { checkStmt(it, program) }
             }
             is BpfStmt.BoundedLoop -> {
                 checkExpr(stmt.count, program)
