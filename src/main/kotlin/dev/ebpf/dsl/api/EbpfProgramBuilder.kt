@@ -16,6 +16,7 @@ fun ebpf(name: String, block: EbpfProgramBuilder.() -> Unit): BpfProgramModel {
 
 class EbpfProgramBuilder(private val name: String) {
     private var _license: String? = null
+    private var _preamble: String? = null
     private val _maps = mutableListOf<MapDecl>()
     private val _mapNames = mutableSetOf<String>()
     private val _programs = mutableListOf<ProgramDef>()
@@ -23,6 +24,10 @@ class EbpfProgramBuilder(private val name: String) {
 
     fun license(license: String) {
         _license = license
+    }
+
+    fun preamble(code: String) {
+        _preamble = code
     }
 
     // ── Map delegate factories ──────────────────────────────────────────
@@ -155,6 +160,7 @@ class EbpfProgramBuilder(private val name: String) {
         maps = _maps.toList(),
         programs = _programs.toList(),
         structs = _structs.toSet(),
+        preamble = _preamble,
     )
 
     companion object {

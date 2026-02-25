@@ -37,6 +37,12 @@ class CCodeGenerator(private val model: BpfProgramModel) {
             sb.appendLine()
         }
 
+        // Preamble (raw C helpers, macros, etc.)
+        if (model.preamble != null) {
+            sb.appendLine(model.preamble)
+            sb.appendLine()
+        }
+
         // Structs
         for (struct in model.structs) {
             renderStruct(sb, struct)
