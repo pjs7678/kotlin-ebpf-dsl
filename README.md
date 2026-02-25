@@ -100,6 +100,34 @@ int tp_oom_mark_victim(void *ctx)
 }
 ```
 
+### Generated Kotlin MapReader
+
+```kotlin
+// AUTO-GENERATED — type-safe BPF map deserialization
+class OomMonMapReader {
+    object CgroupKeyLayout {
+        const val SIZE = 8
+        const val CGROUP_ID_OFFSET = 0
+        fun encode(cgroupId: Long): ByteArray { /* ... */ }
+        fun decodeCgroupId(bytes: ByteArray): Long { /* ... */ }
+    }
+
+    data class CounterEntry(val cgroupId: Long, val count: Long)
+
+    fun readOomKills(mapFd: Int, bridge: BpfBridge, maxEntries: Int): List<CounterEntry> {
+        return bridge.mapBatchLookupAndDelete(mapFd, CgroupKeyLayout.SIZE, CounterLayout.SIZE, maxEntries)
+            .map { (keyBytes, valBytes) ->
+                CounterEntry(
+                    cgroupId = CgroupKeyLayout.decodeCgroupId(keyBytes),
+                    count = CounterLayout.decodeCount(valBytes)
+                )
+            }
+    }
+}
+```
+
+No more manual `ByteBuffer` parsing — the generated reader handles endianness, offsets, and alignment.
+
 ## Features
 
 ### Struct Types
@@ -123,20 +151,25 @@ val counters by percpuArray(Value, maxEntries = 256)
 val ring by ringBuf(maxEntries = 1 shl 20)
 ```
 
-Supported: `hashMap`, `lruHashMap`, `percpuHashMap`, `array`, `percpuArray`, `ringBuf`
+Supported: `hashMap`, `lruHashMap`, `percpuHashMap`, `array`, `percpuArray`, `ringBuf`, `scalarHashMap`, `scalarLruHashMap`
 
 ### Program Types
 
 ```kotlin
 tracepoint("sched", "sched_switch") { /* ... */ }
+rawTracepoint("sys_enter") { /* ... */ }
 kprobe("vfs_read") { /* ... */ }
 kretprobe("vfs_read") { /* ... */ }
 fentry("tcp_connect") { /* ... */ }
 fexit("tcp_connect") { /* ... */ }
 xdp { /* ... */ }
 tcClassifier { /* ... */ }
+cgroupSkb("ingress") { /* ... */ }
+sockOps { /* ... */ }
 lsm("bprm_check_security") { /* ... */ }
 ```
+
+14 program types supported: tracepoint, raw_tracepoint, kprobe, kretprobe, fentry, fexit, XDP, TC, cgroup_skb, sockops, socket_filter, LSM, iter, sched_classifier.
 
 ### Control Flow
 
@@ -213,7 +246,78 @@ Requires JDK 21+.
 ./gradlew test
 ```
 
-172 tests covering types, IR, maps, programs, DSL builders, validation, codegen, and end-to-end integration.
+211 tests covering types, IR, maps, programs, DSL builders, validation, codegen, BCC-style tools, and end-to-end integration.
+
+## BCC-Style Tools
+
+Ready-to-use eBPF programs inspired by [BCC tools](https://github.com/iovisor/bcc), adapted for per-cgroup (pod-level) aggregation. Import from `dev.ebpf.dsl.tools`:
+
+| Tool | Description | Hook Type |
+|------|-------------|-----------|
+| `execsnoop()` | Process exec/exit/fork counting | tracepoint (sched) |
+| `oomkill()` | OOM kill event counting | tracepoint (oom) |
+| `runqlat()` | CPU run queue latency histogram | tracepoint (sched) |
+| `tcpconnect()` | TCP bytes, retransmits, connections, RTT | kprobe + tracepoint |
+| `vfsstat()` | VFS read/write/open/fsync counting | kprobe |
+| `biolatency()` | Block I/O latency histogram | kprobe (blk-mq) |
+| `hardirqs()` | Hardware interrupt latency histogram | tracepoint (irq) |
+| `softirqs()` | Software interrupt latency histogram | tracepoint (irq) |
+| `cachestat()` | Page cache hit/add/dirty counting | kprobe |
+| `cpudist()` | On-CPU time distribution histogram | tracepoint (sched) |
+| `dcstat()` | Directory cache (dcache) hit/miss counting | kprobe |
+| `tcpdrop()` | TCP packet drop counting | kprobe |
+
+```kotlin
+import dev.ebpf.dsl.tools.*
+import dev.ebpf.dsl.api.*
+
+// Generate production-ready C and Kotlin reader
+val program = biolatency()
+program.validate().throwOnError()
+
+val c = program.generateC()       // biolatency.bpf.c
+val kt = program.generateKotlin("com.example.bio")  // BiolatencyMapReader.kt
+
+// Or emit both to disk
+program.emit(OutputConfig(
+    cDir = "bpf/",
+    kotlinDir = "src/main/kotlin/",
+    kotlinPackage = "com.example.bio"
+))
+```
+
+Each tool generates:
+- `.bpf.c` with proper SEC annotations, struct definitions, and LRU hash maps
+- Kotlin `MapReader` class with type-safe `ByteBuffer` deserialization
+
+## Usage as Composite Build
+
+Include kotlin-ebpf-dsl in your Gradle project as a composite build:
+
+```kotlin
+// settings.gradle.kts
+val ebpfDslPath: String by settings
+includeBuild(ebpfDslPath) {
+    dependencySubstitution {
+        substitute(module("dev.ebpf:kotlin-ebpf-dsl")).using(project(":"))
+    }
+}
+```
+
+```kotlin
+// build.gradle.kts
+val bpfGenerator by sourceSets.creating
+dependencies {
+    "bpfGeneratorImplementation"("dev.ebpf:kotlin-ebpf-dsl:0.1.0-SNAPSHOT")
+}
+
+tasks.register<JavaExec>("generateBpf") {
+    classpath = bpfGenerator.runtimeClasspath
+    mainClass.set("com.example.bpf.GenerateBpfKt")
+}
+```
+
+See [kpod-metrics](https://github.com/pjs7678/kpod-metrics) for a full integration example with a 5-stage Docker build.
 
 ## Project Structure
 
@@ -226,6 +330,7 @@ src/main/kotlin/dev/ebpf/dsl/
   api/          ebpf() builder, ProgramBodyBuilder, ExprHandle, MapHandle
   validation/   TypeChecker, SemanticAnalyzer, Diagnostic
   codegen/      CCodeGenerator, KotlinCodeGenerator
+  tools/        BCC-style programs: execsnoop, oomkill, runqlat, tcpconnect, vfsstat, biolatency
 ```
 
 ## License
