@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.ebpf.dsl.validation.TypeCheckerTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:12:57.880Z" hostname="jongsuui-MacBookAir.local" time="0.004">
+  <properties/>
+  <testcase name="error includes program name()" classname="dev.ebpf.dsl.validation.TypeCheckerTest" time="0.002"/>
+  <testcase name="GPL helper without GPL license is error()" classname="dev.ebpf.dsl.validation.TypeCheckerTest" time="0.0"/>
+  <testcase name="valid program passes type check()" classname="dev.ebpf.dsl.validation.TypeCheckerTest" time="0.0"/>
+  <testcase name="helper available in correct program type passes()" classname="dev.ebpf.dsl.validation.TypeCheckerTest" time="0.0"/>
+  <testcase name="multiple programs checked independently()" classname="dev.ebpf.dsl.validation.TypeCheckerTest" time="0.001"/>
+  <testcase name="helper unavailable in program type is error()" classname="dev.ebpf.dsl.validation.TypeCheckerTest" time="0.0"/>
+  <testcase name="universal helper available in all program types()" classname="dev.ebpf.dsl.validation.TypeCheckerTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

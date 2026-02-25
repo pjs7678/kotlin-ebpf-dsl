@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.ebpf.dsl.api.EbpfProgramBuilderTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:12:57.813Z" hostname="jongsuui-MacBookAir.local" time="0.024">
+  <properties/>
+  <testcase name="structs are collected()" classname="dev.ebpf.dsl.api.EbpfProgramBuilderTest" time="0.012"/>
+  <testcase name="map name from property name converted to snake_case()" classname="dev.ebpf.dsl.api.EbpfProgramBuilderTest" time="0.003"/>
+  <testcase name="duplicate map names throw()" classname="dev.ebpf.dsl.api.EbpfProgramBuilderTest" time="0.002"/>
+  <testcase name="ringbuf has null key and value()" classname="dev.ebpf.dsl.api.EbpfProgramBuilderTest" time="0.0"/>
+  <testcase name="program names follow naming convention()" classname="dev.ebpf.dsl.api.EbpfProgramBuilderTest" time="0.003"/>
+  <testcase name="array map has U32 key()" classname="dev.ebpf.dsl.api.EbpfProgramBuilderTest" time="0.0"/>
+  <testcase name="builds model with license and maps()" classname="dev.ebpf.dsl.api.EbpfProgramBuilderTest" time="0.001"/>
+  <testcase name="multiple programs in one model()" classname="dev.ebpf.dsl.api.EbpfProgramBuilderTest" time="0.001"/>
+  <testcase name="explicit map name overrides property name()" classname="dev.ebpf.dsl.api.EbpfProgramBuilderTest" time="0.0"/>
+  <testcase name="model with no license()" classname="dev.ebpf.dsl.api.EbpfProgramBuilderTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
