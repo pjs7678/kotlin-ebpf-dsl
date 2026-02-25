@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.ebpf.dsl.types.BpfStructTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:14:17.446Z" hostname="jongsuui-MacBookAir.local" time="0.005">
+<testsuite name="dev.ebpf.dsl.types.BpfStructTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:15:02.236Z" hostname="jongsuui-MacBookAir.local" time="0.003">
   <properties/>
   <testcase name="cName is used as struct name()" classname="dev.ebpf.dsl.types.BpfStructTest" time="0.0"/>
   <testcase name="simple struct computes size and offsets()" classname="dev.ebpf.dsl.types.BpfStructTest" time="0.0"/>
-  <testcase name="duplicate field name throws()" classname="dev.ebpf.dsl.types.BpfStructTest" time="0.001"/>
-  <testcase name="struct with array field()" classname="dev.ebpf.dsl.types.BpfStructTest" time="0.001"/>
-  <testcase name="multi-field struct with padding()" classname="dev.ebpf.dsl.types.BpfStructTest" time="0.001"/>
+  <testcase name="duplicate field name throws()" classname="dev.ebpf.dsl.types.BpfStructTest" time="0.0"/>
+  <testcase name="struct with array field()" classname="dev.ebpf.dsl.types.BpfStructTest" time="0.0"/>
+  <testcase name="multi-field struct with padding()" classname="dev.ebpf.dsl.types.BpfStructTest" time="0.0"/>
   <testcase name="camelCase converts to snake_case()" classname="dev.ebpf.dsl.types.BpfStructTest" time="0.0"/>
   <testcase name="complex padding scenario()" classname="dev.ebpf.dsl.types.BpfStructTest" time="0.001"/>
   <system-out><![CDATA[]]></system-out>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="dev.ebpf.dsl.api.ValidationIntegrationTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:15:02.210Z" hostname="jongsuui-MacBookAir.local" time="0.006">
+  <properties/>
+  <testcase name="validate with no programs succeeds()" classname="dev.ebpf.dsl.api.ValidationIntegrationTest" time="0.001"/>
+  <testcase name="throwOnError throws on failure()" classname="dev.ebpf.dsl.api.ValidationIntegrationTest" time="0.002"/>
+  <testcase name="validate runs both phases()" classname="dev.ebpf.dsl.api.ValidationIntegrationTest" time="0.001"/>
+  <testcase name="validate catches type errors and semantic errors together()" classname="dev.ebpf.dsl.api.ValidationIntegrationTest" time="0.0"/>
+  <testcase name="validate collects diagnostics from both phases()" classname="dev.ebpf.dsl.api.ValidationIntegrationTest" time="0.002"/>
+  <testcase name="warnings dont block validation()" classname="dev.ebpf.dsl.api.ValidationIntegrationTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
