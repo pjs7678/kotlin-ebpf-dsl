@@ -1,15 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="dev.ebpf.dsl.ir.AstTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:19:52.462Z" hostname="jongsuui-MacBookAir.local" time="0.003">
+<testsuite name="dev.ebpf.dsl.ir.AstTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-02-25T02:21:12.261Z" hostname="jongsuui-MacBookAir.local" time="0.003">
   <properties/>
-  <testcase name="atomic op has target and operand()" classname="dev.ebpf.dsl.ir.AstTest" time="0.0"/>
-  <testcase name="bounded loop has count and iter var()" classname="dev.ebpf.dsl.ir.AstTest" time="0.001"/>
+  <testcase name="atomic op has target and operand()" classname="dev.ebpf.dsl.ir.AstTest" time="0.001"/>
+  <testcase name="bounded loop has count and iter var()" classname="dev.ebpf.dsl.ir.AstTest" time="0.0"/>
   <testcase name="binary op preserves result type()" classname="dev.ebpf.dsl.ir.AstTest" time="0.0"/>
   <testcase name="helper call has id name and args()" classname="dev.ebpf.dsl.ir.AstTest" time="0.0"/>
   <testcase name="literal expression carries type()" classname="dev.ebpf.dsl.ir.AstTest" time="0.001"/>
   <testcase name="ifNonNull has variable and body()" classname="dev.ebpf.dsl.ir.AstTest" time="0.0"/>
   <testcase name="var ref tracks variable()" classname="dev.ebpf.dsl.ir.AstTest" time="0.0"/>
   <testcase name="raw expression embeds C code()" classname="dev.ebpf.dsl.ir.AstTest" time="0.0"/>
-  <testcase name="if statement has then and optional else()" classname="dev.ebpf.dsl.ir.AstTest" time="0.001"/>
+  <testcase name="if statement has then and optional else()" classname="dev.ebpf.dsl.ir.AstTest" time="0.0"/>
   <testcase name="cast changes type()" classname="dev.ebpf.dsl.ir.AstTest" time="0.0"/>
   <system-out><![CDATA[]]></system-out>
   <system-err><![CDATA[]]></system-err>
