@@ -138,6 +138,9 @@ class CCodeGenerator(private val model: BpfProgramModel) {
         is ProgramType.Kretprobe -> "struct pt_regs *ctx"
         is ProgramType.Xdp -> "struct xdp_md *ctx"
         is ProgramType.TcClassifier -> "struct __sk_buff *ctx"
+        is ProgramType.RawTracepoint -> "struct bpf_raw_tracepoint_args *ctx"
+        is ProgramType.CgroupSkb -> "struct __sk_buff *ctx"
+        is ProgramType.SockOps -> "struct bpf_sock_ops *ctx"
         else -> "void *ctx"
     }
 
