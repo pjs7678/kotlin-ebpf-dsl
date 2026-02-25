@@ -64,6 +64,7 @@ class CCodeGenerator(private val model: BpfProgramModel) {
                 is BpfStmt.IfNonNull -> {
                     pointerVars.add(stmt.variable.name)
                     collectPointerVars(stmt.body)
+                    stmt.else_?.let { collectPointerVars(it) }
                 }
                 is BpfStmt.If -> {
                     collectPointerVars(stmt.then)
@@ -176,6 +177,10 @@ class CCodeGenerator(private val model: BpfProgramModel) {
                 sb.appendLine("${pad}${valueTypeName} *${v.name} = ${renderExpr(stmt.expr)};")
                 sb.appendLine("${pad}if (${v.name}) {")
                 for (s in stmt.body) renderStmt(sb, s, indent + 1)
+                if (stmt.else_ != null) {
+                    sb.appendLine("${pad}} else {")
+                    for (s in stmt.else_) renderStmt(sb, s, indent + 1)
+                }
                 sb.appendLine("${pad}}")
             }
             is BpfStmt.Return -> {
