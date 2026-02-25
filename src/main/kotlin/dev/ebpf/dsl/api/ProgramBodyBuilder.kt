@@ -262,6 +262,15 @@ class ProgramBodyBuilder(
     @Suppress("PropertyName")
     val XDP_REDIRECT = 4
 
+    // ── BPF map update flag constants ───────────────────────────────────
+
+    @Suppress("PropertyName")
+    val BPF_ANY = 0L
+    @Suppress("PropertyName")
+    val BPF_NOEXIST = 1L
+    @Suppress("PropertyName")
+    val BPF_EXIST = 2L
+
     // ── Raw escape hatch ────────────────────────────────────────────────
 
     fun raw(cCode: String, returnType: BpfType): ExprHandle {
