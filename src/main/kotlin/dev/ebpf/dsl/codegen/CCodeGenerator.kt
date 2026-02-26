@@ -235,6 +235,14 @@ class CCodeGenerator(private val model: BpfProgramModel) {
         is BpfExpr.HelperCall -> "${expr.helperName}(${expr.args.joinToString(", ") { renderExpr(it) }})"
         is BpfExpr.Cast -> "(${(expr.target).cName})${renderExpr(expr.expr)}"
         is BpfExpr.Raw -> expr.cCode
+        is BpfExpr.Deref -> "*${renderExpr(expr.operand)}"
+        is BpfExpr.TracepointField -> "((struct ${expr.structName} *)ctx)->${expr.fieldName}"
+        is BpfExpr.KprobeParam -> "(${expr.castType})PT_REGS_PARM${expr.index}(ctx)"
+        is BpfExpr.RawTpArg -> "(${expr.castType})ctx->args[${expr.index}]"
+        is BpfExpr.HistSlot -> "log2l(${renderExpr(expr.value)}) >= ${expr.maxSlots} ? ${expr.maxSlots - 1} : log2l(${renderExpr(expr.value)})"
+        is BpfExpr.Ternary -> "(${renderExpr(expr.cond)}) ? ${renderExpr(expr.then)} : ${renderExpr(expr.else_)}"
+        is BpfExpr.StructArraySet -> "(${renderExpr(expr.structVar)}.${expr.field.name}[${renderExpr(expr.index)}] = ${renderExpr(expr.value)}, (__s32)0)"
+        is BpfExpr.CTypeCast -> "(${expr.cTypeName})${renderExpr(expr.operand)}"
         is BpfExpr.MapLookup -> "bpf_map_lookup_elem(&${expr.mapName}, &${renderExpr(expr.key)})"
         is BpfExpr.MapUpdate -> "bpf_map_update_elem(&${expr.mapName}, &${renderExpr(expr.key)}, &${renderExpr(expr.value)}, ${expr.flags})"
     }

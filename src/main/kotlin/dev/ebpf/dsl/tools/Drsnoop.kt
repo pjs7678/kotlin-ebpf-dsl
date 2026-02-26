@@ -1,7 +1,6 @@
 package dev.ebpf.dsl.tools
 
 import dev.ebpf.dsl.api.ebpf
-import dev.ebpf.dsl.ir.BpfExpr
 import dev.ebpf.dsl.types.BpfScalar
 import dev.ebpf.dsl.types.BpfStruct
 
@@ -46,8 +45,7 @@ fun drsnoop() = ebpf("drsnoop") {
         val pidTgid = declareVar("pid_tgid", getCurrentPidTgid())
         val entry = reclaimStart.lookup(pidTgid)
         ifNonNull(entry) { e ->
-            val varName = (e.expr as BpfExpr.VarRef).variable.name
-            val deltaNs = declareVar("delta_ns", ktimeGetNs() - raw("*$varName", BpfScalar.U64))
+            val deltaNs = declareVar("delta_ns", ktimeGetNs() - e.deref())
             reclaimStart.delete(pidTgid)
 
             val cgroupId = declareVar("cgroup_id", getCurrentCgroupId())

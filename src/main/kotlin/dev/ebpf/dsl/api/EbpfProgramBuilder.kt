@@ -1,5 +1,7 @@
 package dev.ebpf.dsl.api
 
+import dev.ebpf.dsl.ir.BpfExpr
+import dev.ebpf.dsl.ir.BpfStmt
 import dev.ebpf.dsl.maps.MapDecl
 import dev.ebpf.dsl.maps.MapType
 import dev.ebpf.dsl.programs.ProgramType
@@ -22,8 +24,17 @@ class EbpfProgramBuilder(private val name: String) {
     private val _programs = mutableListOf<ProgramDef>()
     private val _structs = mutableSetOf<BpfStruct>()
 
+    @Deprecated(
+        message = "Use license(BpfLicense.GPL) instead of license(\"GPL\")",
+        replaceWith = ReplaceWith("license(BpfLicense.GPL)", "dev.ebpf.dsl.api.BpfLicense"),
+        level = DeprecationLevel.WARNING,
+    )
     fun license(license: String) {
         _license = license
+    }
+
+    fun license(license: BpfLicense) {
+        _license = license.licenseString
     }
 
     fun preamble(code: String) {
@@ -104,6 +115,14 @@ class EbpfProgramBuilder(private val name: String) {
         addProgram(ProgramType.Tracepoint(category, name), "tp_${category}_$name", block)
     }
 
+    /** Typed tracepoint: provides a [TracepointCtxHandle] for type-safe field access. */
+    fun tracepoint(def: TracepointDef, block: ProgramBodyBuilder.(TracepointCtxHandle) -> Unit) {
+        addProgram(ProgramType.Tracepoint(def.category, def.name), "tp_${def.category}_${def.name}") {
+            val ctx = TracepointCtxHandle(def, this)
+            block(ctx)
+        }
+    }
+
     fun rawTracepoint(name: String, block: ProgramBodyBuilder.() -> Unit) {
         addProgram(ProgramType.RawTracepoint(name), "raw_tp_$name", block)
     }
@@ -154,16 +173,76 @@ class EbpfProgramBuilder(private val name: String) {
         _programs.add(ProgramDef(name, type, bodyBuilder.build()))
     }
 
-    fun build(): BpfProgramModel = BpfProgramModel(
-        name = name,
-        license = _license,
-        maps = _maps.toList(),
-        programs = _programs.toList(),
-        structs = _structs.toSet(),
-        preamble = _preamble,
-    )
+    fun build(): BpfProgramModel {
+        // Auto-inject log2l preamble if any program uses HistSlot
+        val needsLog2l = _programs.any { prog -> prog.body.any { containsHistSlot(it) } }
+        val preamble = if (needsLog2l && _preamble == null) LOG2L_PREAMBLE
+            else _preamble
+
+        return BpfProgramModel(
+            name = name,
+            license = _license,
+            maps = _maps.toList(),
+            programs = _programs.toList(),
+            structs = _structs.toSet(),
+            preamble = preamble,
+        )
+    }
+
+    private fun containsHistSlot(stmt: BpfStmt): Boolean = when (stmt) {
+        is BpfStmt.VarDecl -> exprContainsHistSlot(stmt.init)
+        is BpfStmt.Assign -> exprContainsHistSlot(stmt.target) || exprContainsHistSlot(stmt.value)
+        is BpfStmt.If -> {
+            exprContainsHistSlot(stmt.cond) ||
+                stmt.then.any { containsHistSlot(it) } ||
+                stmt.elseIfs.any { (c, b) -> exprContainsHistSlot(c) || b.any { containsHistSlot(it) } } ||
+                stmt.else_?.any { containsHistSlot(it) } == true
+        }
+        is BpfStmt.IfNonNull -> {
+            exprContainsHistSlot(stmt.expr) ||
+                stmt.body.any { containsHistSlot(it) } ||
+                stmt.else_?.any { containsHistSlot(it) } == true
+        }
+        is BpfStmt.BoundedLoop -> exprContainsHistSlot(stmt.count) || stmt.body.any { containsHistSlot(it) }
+        is BpfStmt.Return -> exprContainsHistSlot(stmt.value)
+        is BpfStmt.AtomicOp -> exprContainsHistSlot(stmt.target) || exprContainsHistSlot(stmt.operand)
+        is BpfStmt.ExprStmt -> exprContainsHistSlot(stmt.expr)
+        is BpfStmt.MapDelete -> exprContainsHistSlot(stmt.key)
+    }
+
+    private fun exprContainsHistSlot(expr: BpfExpr): Boolean = when (expr) {
+        is BpfExpr.HistSlot -> true
+        is BpfExpr.BinaryOp -> exprContainsHistSlot(expr.left) || exprContainsHistSlot(expr.right)
+        is BpfExpr.UnaryOp -> exprContainsHistSlot(expr.operand)
+        is BpfExpr.FieldAccess -> exprContainsHistSlot(expr.base)
+        is BpfExpr.ArrayIndex -> exprContainsHistSlot(expr.base) || exprContainsHistSlot(expr.index)
+        is BpfExpr.HelperCall -> expr.args.any { exprContainsHistSlot(it) }
+        is BpfExpr.Cast -> exprContainsHistSlot(expr.expr)
+        is BpfExpr.Deref -> exprContainsHistSlot(expr.operand)
+        is BpfExpr.Ternary -> exprContainsHistSlot(expr.cond) || exprContainsHistSlot(expr.then) || exprContainsHistSlot(expr.else_)
+        is BpfExpr.StructArraySet -> exprContainsHistSlot(expr.structVar) || exprContainsHistSlot(expr.index) || exprContainsHistSlot(expr.value)
+        is BpfExpr.CTypeCast -> exprContainsHistSlot(expr.operand)
+        is BpfExpr.MapLookup -> exprContainsHistSlot(expr.key)
+        is BpfExpr.MapUpdate -> exprContainsHistSlot(expr.key) || exprContainsHistSlot(expr.value)
+        is BpfExpr.Literal, is BpfExpr.VarRef, is BpfExpr.Raw,
+        is BpfExpr.TracepointField, is BpfExpr.KprobeParam, is BpfExpr.RawTpArg -> false
+    }
 
     companion object {
         private val ARRAY_TYPES = setOf(MapType.ARRAY, MapType.PERCPU_ARRAY)
+
+        private val LOG2L_PREAMBLE = """
+            #define MAX_ENTRIES 10240
+            #define MAX_SLOTS 27
+
+            static __always_inline __u32 log2l(__u64 v) {
+                __u32 r = 0;
+                while (v > 1) {
+                    v >>= 1;
+                    r++;
+                }
+                return r;
+            }
+        """.trimIndent()
     }
 }

@@ -1,7 +1,6 @@
 package dev.ebpf.dsl.tools
 
 import dev.ebpf.dsl.api.ebpf
-import dev.ebpf.dsl.ir.BpfExpr
 import dev.ebpf.dsl.types.BpfScalar
 
 /**
@@ -26,6 +25,8 @@ fun bitesize() = ebpf("bitesize") {
     val ioSize by lruHashMap(HistKey, HistValue, maxEntries = 10240)
 
     kprobe("blk_mq_start_request") {
+        // Complex kprobe struct pointer + field access — no single IR node for this pattern
+        @Suppress("DEPRECATION")
         val bytes = declareVar(
             "bytes",
             raw("(__u64)((struct request *)PT_REGS_PARM1(ctx))->__data_len", BpfScalar.U64)
@@ -35,18 +36,17 @@ fun bitesize() = ebpf("bitesize") {
         val hkey = stackVar(HistKey) { it[HistKey.cgroupId] = cgroupId }
         val hval = ioSize.lookup(hkey)
         ifNonNull(hval) { he ->
-            val slot = declareVar("slot", raw("log2l(bytes) >= MAX_SLOTS ? MAX_SLOTS - 1 : log2l(bytes)", BpfScalar.U32))
+            val slot = declareVar("slot", histSlot(bytes, 27))
             he[HistValue.slots].at(slot).atomicAdd(literal(1u, BpfScalar.U64))
             he[HistValue.count].atomicAdd(literal(1u, BpfScalar.U64))
             he[HistValue.sumNs].atomicAdd(bytes)
         }.elseThen {
-            val slot2 = declareVar("slot2", raw("log2l(bytes) >= MAX_SLOTS ? MAX_SLOTS - 1 : log2l(bytes)", BpfScalar.U32))
+            val slot2 = declareVar("slot2", histSlot(bytes, 27))
             val newHval = stackVar(HistValue) {
                 it[HistValue.count] = literal(1u, BpfScalar.U64)
                 it[HistValue.sumNs] = bytes
             }
-            val newHvalName = (newHval.expr as BpfExpr.VarRef).variable.name
-            declareVar("_arr_set", raw("($newHvalName.slots[slot2] = 1ULL, (__s32)0)", BpfScalar.S32))
+            declareVar("_arr_set", structArraySet(newHval, HistValue.slots, slot2, literal(1uL, BpfScalar.U64)))
             ioSize.update(hkey, newHval, flags = BPF_NOEXIST)
         }
         returnValue(literal(0, BpfScalar.S32))

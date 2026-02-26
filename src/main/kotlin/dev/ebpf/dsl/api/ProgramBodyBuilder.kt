@@ -273,6 +273,10 @@ class ProgramBodyBuilder(
 
     // ── Raw escape hatch ────────────────────────────────────────────────
 
+    @Deprecated(
+        message = "Use type-safe alternatives: tracepointField(), kprobeParam(), rawTpArg(), deref(), histSlot(), ternary(), structArraySet(), cTypeCast()",
+        level = DeprecationLevel.WARNING,
+    )
     fun raw(cCode: String, returnType: BpfType): ExprHandle {
         return ExprHandle(BpfExpr.Raw(cCode, returnType), this)
     }
@@ -282,6 +286,40 @@ class ProgramBodyBuilder(
     fun cast(expr: ExprHandle, target: BpfScalar): ExprHandle {
         return ExprHandle(BpfExpr.Cast(expr.expr, target), this)
     }
+
+    // ── Type-safe replacements for raw() ────────────────────────────────
+
+    /** Dereference a pointer: `*ptr` */
+    fun deref(ptr: ExprHandle): ExprHandle =
+        ExprHandle(BpfExpr.Deref(ptr.expr), this)
+
+    /** Access a tracepoint context field: `((struct X *)ctx)->field` */
+    fun tracepointField(structName: String, fieldName: String, type: BpfScalar): ExprHandle =
+        ExprHandle(BpfExpr.TracepointField(structName, fieldName, type), this)
+
+    /** Access a kprobe parameter: `(cast)PT_REGS_PARMn(ctx)` */
+    fun kprobeParam(index: Int, castType: String, type: BpfScalar = BpfScalar.U64): ExprHandle =
+        ExprHandle(BpfExpr.KprobeParam(index, castType, type), this)
+
+    /** Access a raw tracepoint argument: `(cast)ctx->args[n]` */
+    fun rawTpArg(index: Int, castType: String, type: BpfScalar = BpfScalar.U64): ExprHandle =
+        ExprHandle(BpfExpr.RawTpArg(index, castType, type), this)
+
+    /** Compute a histogram slot: `log2l(x) >= max ? max-1 : log2l(x)` */
+    fun histSlot(value: ExprHandle, maxSlots: Int = 27): ExprHandle =
+        ExprHandle(BpfExpr.HistSlot(value.expr, maxSlots), this)
+
+    /** Ternary expression: `(cond) ? then : else` */
+    fun ternary(cond: ExprHandle, then: ExprHandle, else_: ExprHandle): ExprHandle =
+        ExprHandle(BpfExpr.Ternary(cond.expr, then.expr, else_.expr), this)
+
+    /** Struct array field set with comma expression: `(v.field[i] = val, (__s32)0)` */
+    fun structArraySet(structVar: ExprHandle, field: StructField, index: ExprHandle, value: ExprHandle): ExprHandle =
+        ExprHandle(BpfExpr.StructArraySet(structVar.expr, field, index.expr, value.expr), this)
+
+    /** C-type cast by name: `(cast)expr` */
+    fun cTypeCast(cTypeName: String, expr: ExprHandle, resultType: BpfScalar): ExprHandle =
+        ExprHandle(BpfExpr.CTypeCast(cTypeName, expr.expr, resultType), this)
 }
 
 // ── Struct field initializer ────────────────────────────────────────────

@@ -101,7 +101,21 @@ class TypeChecker(private val model: BpfProgramModel) {
                 checkExpr(expr.index, program)
             }
             is BpfExpr.Cast -> checkExpr(expr.expr, program)
-            is BpfExpr.Literal, is BpfExpr.VarRef, is BpfExpr.Raw -> { /* no sub-expressions */ }
+            is BpfExpr.Deref -> checkExpr(expr.operand, program)
+            is BpfExpr.HistSlot -> checkExpr(expr.value, program)
+            is BpfExpr.Ternary -> {
+                checkExpr(expr.cond, program)
+                checkExpr(expr.then, program)
+                checkExpr(expr.else_, program)
+            }
+            is BpfExpr.StructArraySet -> {
+                checkExpr(expr.structVar, program)
+                checkExpr(expr.index, program)
+                checkExpr(expr.value, program)
+            }
+            is BpfExpr.CTypeCast -> checkExpr(expr.operand, program)
+            is BpfExpr.Literal, is BpfExpr.VarRef, is BpfExpr.Raw,
+            is BpfExpr.TracepointField, is BpfExpr.KprobeParam, is BpfExpr.RawTpArg -> { /* no sub-expressions */ }
         }
     }
 }

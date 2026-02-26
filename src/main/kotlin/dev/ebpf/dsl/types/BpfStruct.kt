@@ -3,7 +3,10 @@ package dev.ebpf.dsl.types
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KProperty
 
-open class BpfStruct(override val cName: String) : BpfType() {
+open class BpfStruct(explicitCName: String? = null) : BpfType() {
+
+    override val cName: String = explicitCName
+        ?: camelToSnake(this::class.simpleName ?: error("Anonymous BpfStruct must provide an explicit cName"))
 
     private val _fields = mutableListOf<StructField>()
     private val _names = mutableSetOf<String>()
