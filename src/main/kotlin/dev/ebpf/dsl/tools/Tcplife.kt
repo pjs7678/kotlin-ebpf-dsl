@@ -27,6 +27,7 @@ import dev.ebpf.dsl.types.BpfStruct
  */
 fun tcplife() = ebpf("tcplife") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val connStart by scalarHashMap(BpfScalar.U64, BpfScalar.U64, maxEntries = 10240)
@@ -40,9 +41,9 @@ fun tcplife() = ebpf("tcplife") {
         )
         val portPair = declareVar(
             "port_pair",
-            cTypeCast("__u64", tracepointField("trace_event_raw_inet_sock_set_state", "__sport", BpfScalar.U16), BpfScalar.U64) shl
+            cTypeCast("__u64", tracepointField("trace_event_raw_inet_sock_set_state", "sport", BpfScalar.U16), BpfScalar.U64) shl
                 literal(32, BpfScalar.U64) or
-                cTypeCast("__u64", tracepointField("trace_event_raw_inet_sock_set_state", "__dport", BpfScalar.U16), BpfScalar.U64)
+                cTypeCast("__u64", tracepointField("trace_event_raw_inet_sock_set_state", "dport", BpfScalar.U16), BpfScalar.U64)
         )
         val cgroupId = declareVar("cgroup_id", getCurrentCgroupId())
 

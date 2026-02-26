@@ -29,6 +29,7 @@ object CapStats : BpfStruct("cap_stats") {
 
 fun capable() = ebpf("capable") {
     license("GPL")
+    targetKernel("5.3")
 
     val capStats by lruHashMap(CgroupKey, CapStats, maxEntries = 10240)
 

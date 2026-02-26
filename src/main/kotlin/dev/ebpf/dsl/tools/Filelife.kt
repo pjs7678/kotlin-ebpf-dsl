@@ -27,6 +27,7 @@ object FileStats : BpfStruct("file_stats") {
 
 fun filelife() = ebpf("filelife") {
     license("GPL")
+    targetKernel("5.3")
 
     val fileStats by lruHashMap(CgroupKey, FileStats, maxEntries = 10240)
 

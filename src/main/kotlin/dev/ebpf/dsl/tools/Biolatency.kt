@@ -36,6 +36,7 @@ object ReqInfo : BpfStruct("req_info") {
 
 fun biolatency() = ebpf("biolatency") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val reqInfo by hashMap(ReqKey, ReqInfo, maxEntries = 10240)

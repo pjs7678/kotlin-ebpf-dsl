@@ -12,6 +12,7 @@ class SemanticAnalyzer(private val model: BpfProgramModel) {
     private val diagnostics = mutableListOf<Diagnostic>()
 
     fun analyze(): ValidationResult {
+        checkKernelCompatibility()
         checkMapAntiPatterns()
         for (program in model.programs) {
             checkStackUsage(program)
@@ -112,6 +113,31 @@ class SemanticAnalyzer(private val model: BpfProgramModel) {
                         DiagnosticLevel.WARNING, "raw-expr",
                         "raw() escape hatch used. Consider type-safe alternatives: tracepointField(), kprobeParam(), deref(), histSlot(), etc.",
                         progName,
+                    )
+                )
+            }
+        }
+    }
+
+    private fun checkKernelCompatibility() {
+        for (map in model.maps) {
+            if (map.mapType.minKernel > model.targetKernel) {
+                diagnostics.add(
+                    Diagnostic(
+                        DiagnosticLevel.ERROR, "kernel-version",
+                        "Map '${map.name}' uses ${map.mapType.name} which requires kernel ${map.mapType.minKernel}+, but target is ${model.targetKernel}",
+                        null,
+                    )
+                )
+            }
+        }
+        for (prog in model.programs) {
+            if (prog.type.minKernel > model.targetKernel) {
+                diagnostics.add(
+                    Diagnostic(
+                        DiagnosticLevel.ERROR, "kernel-version",
+                        "Program '${prog.name}' uses ${prog.type::class.simpleName} which requires kernel ${prog.type.minKernel}+, but target is ${model.targetKernel}",
+                        prog.name,
                     )
                 )
             }

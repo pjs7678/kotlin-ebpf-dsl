@@ -25,6 +25,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun hardirqs() = ebpf("hardirqs") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val irqStart by scalarHashMap(BpfScalar.U64, BpfScalar.U64, maxEntries = 10240)

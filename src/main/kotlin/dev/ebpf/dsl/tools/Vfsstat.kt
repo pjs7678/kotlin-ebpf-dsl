@@ -30,6 +30,7 @@ object VfsStats : BpfStruct("vfs_stats") {
 
 fun vfsstat() = ebpf("vfsstat") {
     license("GPL")
+    targetKernel("5.3")
 
     val vfsStats by lruHashMap(CgroupKey, VfsStats, maxEntries = 10240)
 

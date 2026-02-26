@@ -19,6 +19,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun solisten() = ebpf("solisten") {
     license("GPL")
+    targetKernel("5.3")
 
     val listenCount by lruHashMap(CgroupKey, Counter, maxEntries = 10240)
 

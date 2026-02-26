@@ -30,6 +30,7 @@ object PidStats : BpfStruct("pid_stats") {
 
 fun pidpersec() = ebpf("pidpersec") {
     license("GPL")
+    targetKernel("5.3")
 
     val pidStats by percpuHashMap(CgroupKey, PidStats, maxEntries = 10240)
 

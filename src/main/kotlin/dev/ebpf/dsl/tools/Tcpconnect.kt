@@ -35,6 +35,7 @@ object TcpStats : BpfStruct("tcp_stats") {
 
 fun tcpconnect() = ebpf("tcpconnect") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val tcpStats by lruHashMap(CgroupKey, TcpStats, maxEntries = 10240)

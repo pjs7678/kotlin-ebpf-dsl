@@ -30,6 +30,7 @@ object ReclaimStats : BpfStruct("reclaim_stats") {
 
 fun drsnoop() = ebpf("drsnoop") {
     license("GPL")
+    targetKernel("5.3")
 
     val reclaimStart by scalarHashMap(BpfScalar.U64, BpfScalar.U64, maxEntries = 10240)
     val reclaimStats by lruHashMap(CgroupKey, ReclaimStats, maxEntries = 10240)

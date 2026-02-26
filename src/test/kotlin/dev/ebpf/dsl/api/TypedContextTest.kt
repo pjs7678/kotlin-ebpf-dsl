@@ -30,7 +30,7 @@ class TypedContextTest {
             }
         }.generateC()
         assertThat(c).contains("((struct trace_event_raw_inet_sock_set_state *)ctx)->newstate")
-        assertThat(c).contains("((struct trace_event_raw_inet_sock_set_state *)ctx)->__sport")
+        assertThat(c).contains("((struct trace_event_raw_inet_sock_set_state *)ctx)->sport")
     }
 
     @Test

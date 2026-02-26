@@ -26,6 +26,7 @@ object DcStats : BpfStruct("dc_stats") {
 
 fun dcstat() = ebpf("dcstat") {
     license("GPL")
+    targetKernel("5.3")
 
     val dcStats by lruHashMap(CgroupKey, DcStats, maxEntries = 10240)
 

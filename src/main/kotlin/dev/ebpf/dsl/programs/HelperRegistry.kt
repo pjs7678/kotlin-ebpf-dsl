@@ -1,5 +1,6 @@
 package dev.ebpf.dsl.programs
 
+import dev.ebpf.dsl.kernel.KernelVersion
 import dev.ebpf.dsl.types.BpfScalar
 import kotlin.reflect.KClass
 
@@ -64,6 +65,13 @@ object HelperRegistry {
             gplOnly = false, availableIn = emptySet(),
         ))
 
+        // ── Legacy tracing helper (pre-5.5 fallback) ────────────────────
+        register(BpfHelper(
+            id = 4, name = "bpf_probe_read",
+            returnType = BpfScalar.S32, paramTypes = emptyList(),
+            gplOnly = true, availableIn = TRACING,
+        ))
+
         // ── Tracing-only helpers ──────────────────────────────────────────
         register(BpfHelper(
             id = 14, name = "bpf_get_current_pid_tgid",
@@ -84,6 +92,7 @@ object HelperRegistry {
             id = 80, name = "bpf_get_current_cgroup_id",
             returnType = BpfScalar.U64, paramTypes = emptyList(),
             gplOnly = false, availableIn = TRACING,
+            minKernel = KernelVersion.V5_3,
         ))
         register(BpfHelper(
             id = 35, name = "bpf_get_current_task",
@@ -94,16 +103,19 @@ object HelperRegistry {
             id = 158, name = "bpf_get_current_task_btf",
             returnType = BpfScalar.U64, paramTypes = emptyList(),
             gplOnly = true, availableIn = TRACING,
+            minKernel = KernelVersion.V5_10,
         ))
         register(BpfHelper(
             id = 113, name = "bpf_probe_read_kernel",
             returnType = BpfScalar.S32, paramTypes = emptyList(),
             gplOnly = true, availableIn = TRACING,
+            minKernel = KernelVersion.V5_5,
         ))
         register(BpfHelper(
             id = 112, name = "bpf_probe_read_user",
             returnType = BpfScalar.S32, paramTypes = emptyList(),
             gplOnly = true, availableIn = TRACING,
+            minKernel = KernelVersion.V5_5,
         ))
         register(BpfHelper(
             id = 67, name = "bpf_get_stack",
@@ -119,6 +131,7 @@ object HelperRegistry {
             id = 109, name = "bpf_send_signal",
             returnType = BpfScalar.S32, paramTypes = emptyList(),
             gplOnly = false, availableIn = TRACING,
+            minKernel = KernelVersion.V5_3,
         ))
 
         // ── Networking helpers ────────────────────────────────────────────
@@ -157,26 +170,30 @@ object HelperRegistry {
             gplOnly = false, availableIn = NETWORKING,
         ))
 
-        // ── Ring buffer helpers (universal) ───────────────────────────────
+        // ── Ring buffer helpers (universal, kernel 5.8+) ─────────────────
         register(BpfHelper(
             id = 130, name = "bpf_ringbuf_output",
             returnType = BpfScalar.S32, paramTypes = emptyList(),
             gplOnly = false, availableIn = emptySet(),
+            minKernel = KernelVersion.V5_8,
         ))
         register(BpfHelper(
             id = 131, name = "bpf_ringbuf_reserve",
             returnType = BpfScalar.U64, paramTypes = emptyList(),
             gplOnly = false, availableIn = emptySet(),
+            minKernel = KernelVersion.V5_8,
         ))
         register(BpfHelper(
             id = 132, name = "bpf_ringbuf_submit",
             returnType = BpfScalar.S32, paramTypes = emptyList(),
             gplOnly = false, availableIn = emptySet(),
+            minKernel = KernelVersion.V5_8,
         ))
         register(BpfHelper(
             id = 133, name = "bpf_ringbuf_discard",
             returnType = BpfScalar.S32, paramTypes = emptyList(),
             gplOnly = false, availableIn = emptySet(),
+            minKernel = KernelVersion.V5_8,
         ))
 
         // ── Perf helper (universal) ──────────────────────────────────────
@@ -186,16 +203,18 @@ object HelperRegistry {
             gplOnly = false, availableIn = emptySet(),
         ))
 
-        // ── Spin lock helpers (universal) ─────────────────────────────────
+        // ── Spin lock helpers (universal, kernel 5.1+) ───────────────────
         register(BpfHelper(
             id = 93, name = "bpf_spin_lock",
             returnType = BpfScalar.S32, paramTypes = emptyList(),
             gplOnly = false, availableIn = emptySet(),
+            minKernel = KernelVersion.V5_1,
         ))
         register(BpfHelper(
             id = 94, name = "bpf_spin_unlock",
             returnType = BpfScalar.S32, paramTypes = emptyList(),
             gplOnly = false, availableIn = emptySet(),
+            minKernel = KernelVersion.V5_1,
         ))
     }
 

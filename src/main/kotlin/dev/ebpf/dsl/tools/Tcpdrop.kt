@@ -18,6 +18,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun tcpdrop() = ebpf("tcpdrop") {
     license("GPL")
+    targetKernel("5.3")
 
     val tcpDrops by lruHashMap(CgroupKey, Counter, maxEntries = 10240)
 

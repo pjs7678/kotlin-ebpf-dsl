@@ -18,6 +18,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun oomkill() = ebpf("oomkill") {
     license("GPL")
+    targetKernel("5.3")
 
     val oomKills by lruHashMap(CgroupKey, Counter, maxEntries = 10240)
 

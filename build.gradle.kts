@@ -25,4 +25,8 @@ tasks.test {
     testLogging {
         showStandardStreams = true
     }
+    // Pass E2E_OUTPUT_DIR and UPDATE_GOLDEN through to test JVM
+    listOf("E2E_OUTPUT_DIR", "UPDATE_GOLDEN").forEach { key ->
+        System.getenv(key)?.let { environment(key, it) }
+    }
 }

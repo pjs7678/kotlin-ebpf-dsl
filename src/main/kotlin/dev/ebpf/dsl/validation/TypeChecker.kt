@@ -82,6 +82,16 @@ class TypeChecker(private val model: BpfProgramModel) {
                             )
                         )
                     }
+                    if (helper.minKernel > model.targetKernel) {
+                        diagnostics.add(
+                            Diagnostic(
+                                DiagnosticLevel.ERROR,
+                                "kernel-version",
+                                "Helper '${expr.helperName}' requires kernel ${helper.minKernel}+, but target is ${model.targetKernel}",
+                                program.name,
+                            )
+                        )
+                    }
                 }
                 expr.args.forEach { checkExpr(it, program) }
             }

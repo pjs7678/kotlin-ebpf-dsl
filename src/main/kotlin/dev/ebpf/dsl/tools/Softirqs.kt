@@ -21,6 +21,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun softirqs() = ebpf("softirqs") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val softirqStart by scalarHashMap(BpfScalar.U64, BpfScalar.U64, maxEntries = 10240)

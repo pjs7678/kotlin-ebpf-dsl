@@ -1,6 +1,8 @@
 package dev.ebpf.dsl.maps
 
-enum class MapType(val cName: String, val typeId: Int) {
+import dev.ebpf.dsl.kernel.KernelVersion
+
+enum class MapType(val cName: String, val typeId: Int, val minKernel: KernelVersion = KernelVersion.V4_18) {
     HASH("BPF_MAP_TYPE_HASH", 1),
     ARRAY("BPF_MAP_TYPE_ARRAY", 2),
     PROG_ARRAY("BPF_MAP_TYPE_PROG_ARRAY", 3),
@@ -16,6 +18,6 @@ enum class MapType(val cName: String, val typeId: Int) {
     DEVMAP("BPF_MAP_TYPE_DEVMAP", 14),
     SOCKMAP("BPF_MAP_TYPE_SOCKMAP", 15),
     CPUMAP("BPF_MAP_TYPE_CPUMAP", 16),
-    CGROUP_STORAGE("BPF_MAP_TYPE_CGROUP_STORAGE", 19),
-    RINGBUF("BPF_MAP_TYPE_RINGBUF", 27),
+    CGROUP_STORAGE("BPF_MAP_TYPE_CGROUP_STORAGE", 19, KernelVersion(4, 19)),
+    RINGBUF("BPF_MAP_TYPE_RINGBUF", 27, KernelVersion.V5_8),
 }

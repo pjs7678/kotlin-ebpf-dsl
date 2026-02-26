@@ -2,6 +2,7 @@ package dev.ebpf.dsl.api
 
 import dev.ebpf.dsl.ir.BpfExpr
 import dev.ebpf.dsl.ir.BpfStmt
+import dev.ebpf.dsl.kernel.KernelVersion
 import dev.ebpf.dsl.maps.MapDecl
 import dev.ebpf.dsl.maps.MapType
 import dev.ebpf.dsl.programs.ProgramType
@@ -19,6 +20,7 @@ fun ebpf(name: String, block: EbpfProgramBuilder.() -> Unit): BpfProgramModel {
 class EbpfProgramBuilder(private val name: String) {
     private var _license: String? = null
     private var _preamble: String? = null
+    private var _targetKernel: KernelVersion = KernelVersion.V5_15
     private val _maps = mutableListOf<MapDecl>()
     private val _mapNames = mutableSetOf<String>()
     private val _programs = mutableListOf<ProgramDef>()
@@ -39,6 +41,14 @@ class EbpfProgramBuilder(private val name: String) {
 
     fun preamble(code: String) {
         _preamble = code
+    }
+
+    fun targetKernel(version: String) {
+        _targetKernel = KernelVersion.parse(version)
+    }
+
+    fun targetKernel(version: KernelVersion) {
+        _targetKernel = version
     }
 
     // ── Map delegate factories ──────────────────────────────────────────
@@ -186,6 +196,7 @@ class EbpfProgramBuilder(private val name: String) {
             programs = _programs.toList(),
             structs = _structs.toSet(),
             preamble = preamble,
+            targetKernel = _targetKernel,
         )
     }
 

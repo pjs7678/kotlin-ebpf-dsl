@@ -24,6 +24,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun cpudist() = ebpf("cpudist") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val oncpuTs by scalarHashMap(BpfScalar.U32, BpfScalar.U64, maxEntries = 10240)

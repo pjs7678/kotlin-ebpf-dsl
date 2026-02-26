@@ -17,8 +17,8 @@ object SchedWakeup : TracepointDef("sched", "sched_wakeup", "trace_event_raw_sch
 /** sock/inet_sock_set_state — TCP state transition */
 object InetSockSetState : TracepointDef("sock", "inet_sock_set_state", "trace_event_raw_inet_sock_set_state") {
     val newstate = field("newstate", BpfScalar.S32)
-    val sport = field("__sport", BpfScalar.U16)
-    val dport = field("__dport", BpfScalar.U16)
+    val sport = field("sport", BpfScalar.U16)
+    val dport = field("dport", BpfScalar.U16)
     val oldstate = field("oldstate", BpfScalar.S32)
 }
 

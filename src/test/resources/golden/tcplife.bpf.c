@@ -62,7 +62,7 @@ SEC("tp/sock/inet_sock_set_state")
 int tp_sock_inet_sock_set_state(void *ctx)
 {
     __s32 newstate = ((struct trace_event_raw_inet_sock_set_state *)ctx)->newstate;
-    __u64 port_pair = (((__u64)((struct trace_event_raw_inet_sock_set_state *)ctx)->__sport << 32ULL) | (__u64)((struct trace_event_raw_inet_sock_set_state *)ctx)->__dport);
+    __u64 port_pair = (((__u64)((struct trace_event_raw_inet_sock_set_state *)ctx)->sport << 32ULL) | (__u64)((struct trace_event_raw_inet_sock_set_state *)ctx)->dport);
     __u64 cgroup_id = bpf_get_current_cgroup_id();
     if ((newstate == 1)) {
         __u64 ts = bpf_ktime_get_ns();

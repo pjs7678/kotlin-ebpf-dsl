@@ -22,6 +22,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun syscount() = ebpf("syscount") {
     license("GPL")
+    targetKernel("5.3")
 
     val syscallCount by percpuHashMap(CgroupKey, Counter, maxEntries = 10240)
 

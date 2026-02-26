@@ -20,6 +20,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun bitesize() = ebpf("bitesize") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val ioSize by lruHashMap(HistKey, HistValue, maxEntries = 10240)
