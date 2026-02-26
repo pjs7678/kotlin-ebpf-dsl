@@ -108,6 +108,42 @@ object ToolRegistry {
             hookTypes = listOf("kprobe"),
             build = ::tcpdrop,
         ),
+        BpfTool(
+            name = "tcplife",
+            description = "TCP connection duration histogram per cgroup",
+            hookTypes = listOf("tracepoint"),
+            build = ::tcplife,
+        ),
+        BpfTool(
+            name = "syscount",
+            description = "System call counting per cgroup",
+            hookTypes = listOf("raw_tracepoint"),
+            build = ::syscount,
+        ),
+        BpfTool(
+            name = "capable",
+            description = "Security capability check counting per cgroup",
+            hookTypes = listOf("kprobe"),
+            build = ::capable,
+        ),
+        BpfTool(
+            name = "filelife",
+            description = "File creation/deletion counting per cgroup",
+            hookTypes = listOf("kprobe"),
+            build = ::filelife,
+        ),
+        BpfTool(
+            name = "slabtop",
+            description = "Slab/kmalloc allocation counting per cgroup",
+            hookTypes = listOf("kprobe"),
+            build = ::slabtop,
+        ),
+        BpfTool(
+            name = "writeback",
+            description = "Dirty page writeback event counting per cgroup",
+            hookTypes = listOf("tracepoint"),
+            build = ::writeback,
+        ),
     )
 
     /** All registered tools. */
