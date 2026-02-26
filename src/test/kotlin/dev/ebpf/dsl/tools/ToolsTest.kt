@@ -285,16 +285,16 @@ class ToolsTest {
 
     @Test
     fun `all tools generate valid C without errors`() {
-        val tools = allTools()
-        for ((name, program) in tools) {
+        for (tool in ToolRegistry.all()) {
+            val program = tool.build()
             val result = program.validate()
             assertThat(result.errors)
-                .describedAs("$name should have no validation errors")
+                .describedAs("${tool.name} should have no validation errors")
                 .isEmpty()
 
             val c = program.generateC()
             assertThat(c)
-                .describedAs("$name should generate non-empty C")
+                .describedAs("${tool.name} should generate non-empty C")
                 .isNotBlank()
                 .contains("SEC(\"license\")")
                 .contains("SEC(\".maps\")")
@@ -303,29 +303,73 @@ class ToolsTest {
 
     @Test
     fun `all tools generate valid Kotlin readers`() {
-        val tools = allTools()
-        for ((name, program) in tools) {
+        for (tool in ToolRegistry.all()) {
+            val program = tool.build()
             val kt = program.generateKotlin("dev.ebpf.tools")
             assertThat(kt)
-                .describedAs("$name should generate non-empty Kotlin")
+                .describedAs("${tool.name} should generate non-empty Kotlin")
                 .isNotBlank()
                 .contains("MapReader")
                 .contains("Layout")
         }
     }
 
-    private fun allTools() = listOf(
-        "execsnoop" to execsnoop(),
-        "oomkill" to oomkill(),
-        "runqlat" to runqlat(),
-        "tcpconnect" to tcpconnect(),
-        "vfsstat" to vfsstat(),
-        "biolatency" to biolatency(),
-        "hardirqs" to hardirqs(),
-        "softirqs" to softirqs(),
-        "cachestat" to cachestat(),
-        "cpudist" to cpudist(),
-        "dcstat" to dcstat(),
-        "tcpdrop" to tcpdrop(),
-    )
+    // ── ToolRegistry ──────────────────────────────────────────────────────
+
+    @Test
+    fun `registry contains all 12 tools`() {
+        assertThat(ToolRegistry.all()).hasSize(12)
+        assertThat(ToolRegistry.names()).containsExactly(
+            "execsnoop", "oomkill", "runqlat", "tcpconnect",
+            "vfsstat", "biolatency", "hardirqs", "softirqs",
+            "cachestat", "cpudist", "dcstat", "tcpdrop",
+        )
+    }
+
+    @Test
+    fun `registry byName returns correct tool`() {
+        val tool = ToolRegistry.byName("biolatency")
+        assertThat(tool).isNotNull
+        assertThat(tool!!.description).contains("Block I/O")
+        assertThat(tool.hookTypes).containsExactly("kprobe")
+
+        val program = tool.build()
+        assertThat(program.name).isEqualTo("biolatency")
+    }
+
+    @Test
+    fun `registry byName returns null for unknown`() {
+        assertThat(ToolRegistry.byName("nonexistent")).isNull()
+    }
+
+    @Test
+    fun `registry byHookType filters correctly`() {
+        val kprobeTools = ToolRegistry.byHookType("kprobe")
+        assertThat(kprobeTools.map { it.name })
+            .contains("vfsstat", "biolatency", "cachestat", "dcstat", "tcpdrop")
+            .doesNotContain("execsnoop", "oomkill")
+
+        val tpTools = ToolRegistry.byHookType("tracepoint")
+        assertThat(tpTools.map { it.name })
+            .contains("execsnoop", "oomkill", "runqlat", "hardirqs", "softirqs", "cpudist")
+    }
+
+    @Test
+    fun `registry tool names match program names`() {
+        for (tool in ToolRegistry.all()) {
+            val program = tool.build()
+            assertThat(program.name)
+                .describedAs("${tool.name} registry name should match program name")
+                .isEqualTo(tool.name)
+        }
+    }
+
+    @Test
+    fun `every tool has a non-empty description`() {
+        for (tool in ToolRegistry.all()) {
+            assertThat(tool.description)
+                .describedAs("${tool.name} should have a description")
+                .isNotBlank()
+        }
+    }
 }

@@ -246,7 +246,7 @@ Requires JDK 21+.
 ./gradlew test
 ```
 
-211 tests covering types, IR, maps, programs, DSL builders, validation, codegen, BCC-style tools, and end-to-end integration.
+217 tests covering types, IR, maps, programs, DSL builders, validation, codegen, BCC-style tools, and end-to-end integration.
 
 ## BCC-Style Tools
 
@@ -290,6 +290,28 @@ Each tool generates:
 - `.bpf.c` with proper SEC annotations, struct definitions, and LRU hash maps
 - Kotlin `MapReader` class with type-safe `ByteBuffer` deserialization
 
+### Tool Registry
+
+Discover and build tools programmatically via `ToolRegistry`:
+
+```kotlin
+import dev.ebpf.dsl.tools.ToolRegistry
+import dev.ebpf.dsl.api.*
+
+// List all available tools
+ToolRegistry.all().forEach { tool ->
+    println("${tool.name}: ${tool.description} [${tool.hookTypes.joinToString()}]")
+}
+
+// Build by name
+val program = ToolRegistry.byName("runqlat")!!.build()
+program.validate().throwOnError()
+println(program.generateC())
+
+// Filter by hook type
+val kprobeTools = ToolRegistry.byHookType("kprobe")
+```
+
 ## Usage as Composite Build
 
 Include kotlin-ebpf-dsl in your Gradle project as a composite build:
@@ -330,7 +352,7 @@ src/main/kotlin/dev/ebpf/dsl/
   api/          ebpf() builder, ProgramBodyBuilder, ExprHandle, MapHandle
   validation/   TypeChecker, SemanticAnalyzer, Diagnostic
   codegen/      CCodeGenerator, KotlinCodeGenerator
-  tools/        BCC-style programs: execsnoop, oomkill, runqlat, tcpconnect, vfsstat, biolatency
+  tools/        ToolRegistry, BCC-style programs (12 tools), CommonStructs
 ```
 
 ## License
