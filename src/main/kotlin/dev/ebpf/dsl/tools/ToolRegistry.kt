@@ -144,6 +144,42 @@ object ToolRegistry {
             hookTypes = listOf("tracepoint"),
             build = ::writeback,
         ),
+        BpfTool(
+            name = "bitesize",
+            description = "Block I/O request size distribution per cgroup",
+            hookTypes = listOf("kprobe"),
+            build = ::bitesize,
+        ),
+        BpfTool(
+            name = "drsnoop",
+            description = "Direct memory reclaim event counting per cgroup",
+            hookTypes = listOf("tracepoint"),
+            build = ::drsnoop,
+        ),
+        BpfTool(
+            name = "signalsnoop",
+            description = "Signal delivery counting per cgroup",
+            hookTypes = listOf("tracepoint"),
+            build = ::signalsnoop,
+        ),
+        BpfTool(
+            name = "solisten",
+            description = "Socket listen event counting per cgroup",
+            hookTypes = listOf("kprobe"),
+            build = ::solisten,
+        ),
+        BpfTool(
+            name = "pidpersec",
+            description = "Process creation rate (fork/exec) per cgroup",
+            hookTypes = listOf("tracepoint"),
+            build = ::pidpersec,
+        ),
+        BpfTool(
+            name = "tcpsynbl",
+            description = "TCP SYN backlog completion counting per cgroup",
+            hookTypes = listOf("kprobe"),
+            build = ::tcpsynbl,
+        ),
     )
 
     /** All registered tools. */

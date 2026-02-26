@@ -9,7 +9,7 @@ Writing eBPF programs in C is error-prone: wrong helper calls, stack overflows, 
 - **Type-safe structs** with automatic C ABI layout (alignment, padding)
 - **3-phase validation** &mdash; construction-time checks, type checker, semantic analyzer
 - **Dual codegen** &mdash; generates both `.bpf.c` files and Kotlin `MapReader` classes
-- **18 ready-to-use BCC-style tools** &mdash; biolatency, runqlat, execsnoop, tcpconnect, and more
+- **24 ready-to-use BCC-style tools** &mdash; biolatency, runqlat, execsnoop, tcpconnect, and more
 - **31 BPF helpers** with per-program-type availability and GPL enforcement
 - **14 program types** &mdash; tracepoint, kprobe, kretprobe, fentry, fexit, XDP, TC, cgroup, LSM, and more
 
@@ -151,7 +151,7 @@ No more manual `ByteBuffer` parsing &mdash; the generated reader handles endiann
 
 ## BCC-Style Tools
 
-18 ready-to-use eBPF programs inspired by [BCC tools](https://github.com/iovisor/bcc), adapted for per-cgroup (pod-level) aggregation in Kubernetes.
+24 ready-to-use eBPF programs inspired by [BCC tools](https://github.com/iovisor/bcc), adapted for per-cgroup (pod-level) aggregation in Kubernetes.
 
 | Tool | Description | Hook Type |
 |------|-------------|-----------|
@@ -173,6 +173,12 @@ No more manual `ByteBuffer` parsing &mdash; the generated reader handles endiann
 | `filelife()` | File creation/deletion counting | kprobe |
 | `slabtop()` | Slab/kmalloc allocation counting | kprobe |
 | `writeback()` | Dirty page writeback event counting | tracepoint (writeback) |
+| `bitesize()` | Block I/O request size distribution | kprobe (blk-mq) |
+| `drsnoop()` | Direct memory reclaim event counting | tracepoint (vmscan) |
+| `signalsnoop()` | Signal delivery counting | tracepoint (signal) |
+| `solisten()` | Socket listen event counting | kprobe |
+| `pidpersec()` | Process creation rate (fork/exec) | tracepoint (sched) |
+| `tcpsynbl()` | TCP SYN backlog completion counting | kprobe (tcp) |
 
 Each tool generates:
 - `.bpf.c` with proper SEC annotations, struct definitions, and LRU hash maps
@@ -335,7 +341,7 @@ Requires JDK 21+.
 ./gradlew test
 ```
 
-230 tests covering types, IR, maps, programs, DSL builders, validation, codegen, BCC-style tools, and end-to-end integration.
+242 tests covering types, IR, maps, programs, DSL builders, validation, codegen, BCC-style tools, and end-to-end integration.
 
 ## Usage as Composite Build
 
@@ -377,7 +383,7 @@ src/main/kotlin/dev/ebpf/dsl/
   api/          ebpf() builder, ProgramBodyBuilder, ExprHandle, MapHandle
   validation/   TypeChecker, SemanticAnalyzer, Diagnostic
   codegen/      CCodeGenerator, KotlinCodeGenerator
-  tools/        ToolRegistry, BCC-style programs (18 tools), CommonStructs
+  tools/        ToolRegistry, BCC-style programs (24 tools), CommonStructs
 ```
 
 ## License

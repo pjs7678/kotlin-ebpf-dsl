@@ -390,6 +390,101 @@ class ToolsTest {
         assertThat(c).contains("__u64 completions;")
     }
 
+    // ── bitesize ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `bitesize validates successfully`() {
+        assertThat(bitesize().validate().errors).isEmpty()
+    }
+
+    @Test
+    fun `bitesize generates expected C`() {
+        val c = bitesize().generateC()
+        assertThat(c).contains("SEC(\"kprobe/blk_mq_start_request\")")
+        assertThat(c).contains("__data_len")
+        assertThat(c).contains("log2l(")
+        assertThat(c).contains("__u64 slots[27]")
+    }
+
+    // ── drsnoop ──────────────────────────────────────────────────────────
+
+    @Test
+    fun `drsnoop validates successfully`() {
+        assertThat(drsnoop().validate().errors).isEmpty()
+    }
+
+    @Test
+    fun `drsnoop generates expected C`() {
+        val c = drsnoop().generateC()
+        assertThat(c).contains("SEC(\"tp/mm/mm_vmscan_direct_reclaim_begin\")")
+        assertThat(c).contains("SEC(\"tp/mm/mm_vmscan_direct_reclaim_end\")")
+        assertThat(c).contains("struct reclaim_stats")
+        assertThat(c).contains("__u64 total_ns;")
+    }
+
+    // ── signalsnoop ──────────────────────────────────────────────────────
+
+    @Test
+    fun `signalsnoop validates successfully`() {
+        assertThat(signalsnoop().validate().errors).isEmpty()
+    }
+
+    @Test
+    fun `signalsnoop generates expected C`() {
+        val c = signalsnoop().generateC()
+        assertThat(c).contains("SEC(\"tp/signal/signal_deliver\")")
+        assertThat(c).contains("struct counter")
+        assertThat(c).contains("BPF_MAP_TYPE_LRU_HASH")
+    }
+
+    // ── solisten ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `solisten validates successfully`() {
+        assertThat(solisten().validate().errors).isEmpty()
+    }
+
+    @Test
+    fun `solisten generates expected C`() {
+        val c = solisten().generateC()
+        assertThat(c).contains("SEC(\"kprobe/inet_listen\")")
+        assertThat(c).contains("struct counter")
+        assertThat(c).contains("BPF_MAP_TYPE_LRU_HASH")
+    }
+
+    // ── pidpersec ────────────────────────────────────────────────────────
+
+    @Test
+    fun `pidpersec validates successfully`() {
+        assertThat(pidpersec().validate().errors).isEmpty()
+    }
+
+    @Test
+    fun `pidpersec generates expected C`() {
+        val c = pidpersec().generateC()
+        assertThat(c).contains("SEC(\"tp/sched/sched_process_fork\")")
+        assertThat(c).contains("SEC(\"tp/sched/sched_process_exec\")")
+        assertThat(c).contains("struct pid_stats")
+        assertThat(c).contains("__u64 forks;")
+        assertThat(c).contains("__u64 execs;")
+        assertThat(c).contains("BPF_MAP_TYPE_PERCPU_HASH")
+    }
+
+    // ── tcpsynbl ─────────────────────────────────────────────────────────
+
+    @Test
+    fun `tcpsynbl validates successfully`() {
+        assertThat(tcpsynbl().validate().errors).isEmpty()
+    }
+
+    @Test
+    fun `tcpsynbl generates expected C`() {
+        val c = tcpsynbl().generateC()
+        assertThat(c).contains("SEC(\"kprobe/tcp_v4_syn_recv_sock\")")
+        assertThat(c).contains("struct counter")
+        assertThat(c).contains("BPF_MAP_TYPE_LRU_HASH")
+    }
+
     // ── cross-tool ───────────────────────────────────────────────────────
 
     @Test
@@ -426,14 +521,15 @@ class ToolsTest {
     // ── ToolRegistry ──────────────────────────────────────────────────────
 
     @Test
-    fun `registry contains all 18 tools`() {
-        assertThat(ToolRegistry.all()).hasSize(18)
+    fun `registry contains all 24 tools`() {
+        assertThat(ToolRegistry.all()).hasSize(24)
         assertThat(ToolRegistry.names()).containsExactly(
             "execsnoop", "oomkill", "runqlat", "tcpconnect",
             "vfsstat", "biolatency", "hardirqs", "softirqs",
             "cachestat", "cpudist", "dcstat", "tcpdrop",
             "tcplife", "syscount", "capable", "filelife",
-            "slabtop", "writeback",
+            "slabtop", "writeback", "bitesize", "drsnoop",
+            "signalsnoop", "solisten", "pidpersec", "tcpsynbl",
         )
     }
 
@@ -457,12 +553,14 @@ class ToolsTest {
     fun `registry byHookType filters correctly`() {
         val kprobeTools = ToolRegistry.byHookType("kprobe")
         assertThat(kprobeTools.map { it.name })
-            .contains("vfsstat", "biolatency", "cachestat", "dcstat", "tcpdrop", "capable", "filelife", "slabtop")
+            .contains("vfsstat", "biolatency", "cachestat", "dcstat", "tcpdrop",
+                "capable", "filelife", "slabtop", "bitesize", "solisten", "tcpsynbl")
             .doesNotContain("execsnoop", "oomkill")
 
         val tpTools = ToolRegistry.byHookType("tracepoint")
         assertThat(tpTools.map { it.name })
-            .contains("execsnoop", "oomkill", "runqlat", "hardirqs", "softirqs", "cpudist", "tcplife", "writeback")
+            .contains("execsnoop", "oomkill", "runqlat", "hardirqs", "softirqs",
+                "cpudist", "tcplife", "writeback", "drsnoop", "signalsnoop", "pidpersec")
 
         val rawTpTools = ToolRegistry.byHookType("raw_tracepoint")
         assertThat(rawTpTools.map { it.name }).containsExactly("syscount")
