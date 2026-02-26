@@ -1,7 +1,10 @@
 package dev.ebpf.dsl.programs
 
+import dev.ebpf.dsl.kernel.KernelVersion
+
 sealed class ProgramType {
     abstract val sectionPrefix: String
+    open val minKernel: KernelVersion get() = KernelVersion.V4_18
 
     data class Tracepoint(val category: String, val name: String) : ProgramType() {
         override val sectionPrefix = "tp/$category/$name"
@@ -21,10 +24,12 @@ sealed class ProgramType {
 
     data class Fentry(val function: String) : ProgramType() {
         override val sectionPrefix = "fentry/$function"
+        override val minKernel = KernelVersion.V5_5
     }
 
     data class Fexit(val function: String) : ProgramType() {
         override val sectionPrefix = "fexit/$function"
+        override val minKernel = KernelVersion.V5_5
     }
 
     data object Xdp : ProgramType() {
@@ -41,6 +46,7 @@ sealed class ProgramType {
 
     data class Lsm(val hook: String) : ProgramType() {
         override val sectionPrefix = "lsm/$hook"
+        override val minKernel = KernelVersion.V5_7
     }
 
     data object SockOps : ProgramType() {
@@ -53,6 +59,7 @@ sealed class ProgramType {
 
     data class Iter(val type: String) : ProgramType() {
         override val sectionPrefix = "iter/$type"
+        override val minKernel = KernelVersion.V5_9
     }
 
     data class SchedClassifier(val name: String) : ProgramType() {

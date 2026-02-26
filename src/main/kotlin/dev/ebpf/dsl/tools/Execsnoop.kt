@@ -28,6 +28,7 @@ object ExecStats : BpfStruct("exec_stats") {
 
 fun execsnoop() = ebpf("execsnoop") {
     license("GPL")
+    targetKernel("5.3")
 
     val execStats by lruHashMap(CgroupKey, ExecStats, maxEntries = 10240)
 

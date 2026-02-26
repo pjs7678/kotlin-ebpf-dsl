@@ -19,6 +19,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun tcpsynbl() = ebpf("tcpsynbl") {
     license("GPL")
+    targetKernel("5.3")
 
     val synCount by lruHashMap(CgroupKey, Counter, maxEntries = 10240)
 

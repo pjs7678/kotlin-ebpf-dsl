@@ -34,6 +34,7 @@ object CacheStats : BpfStruct("cache_stats") {
 
 fun cachestat() = ebpf("cachestat") {
     license("GPL")
+    targetKernel("5.3")
 
     val cacheStats by lruHashMap(CgroupKey, CacheStats, maxEntries = 10240)
 

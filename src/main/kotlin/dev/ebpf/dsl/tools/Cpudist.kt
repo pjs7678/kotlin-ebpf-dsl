@@ -1,7 +1,6 @@
 package dev.ebpf.dsl.tools
 
 import dev.ebpf.dsl.api.ebpf
-import dev.ebpf.dsl.ir.BpfExpr
 import dev.ebpf.dsl.types.BpfScalar
 
 /**
@@ -25,6 +24,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun cpudist() = ebpf("cpudist") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val oncpuTs by scalarHashMap(BpfScalar.U32, BpfScalar.U64, maxEntries = 10240)
@@ -33,11 +33,11 @@ fun cpudist() = ebpf("cpudist") {
     tracepoint("sched", "sched_switch") {
         val prevPid = declareVar(
             "prev_pid",
-            raw("((struct trace_event_raw_sched_switch *)ctx)->prev_pid", BpfScalar.U32)
+            tracepointField("trace_event_raw_sched_switch", "prev_pid", BpfScalar.U32)
         )
         val nextPid = declareVar(
             "next_pid",
-            raw("((struct trace_event_raw_sched_switch *)ctx)->next_pid", BpfScalar.U32)
+            tracepointField("trace_event_raw_sched_switch", "next_pid", BpfScalar.U32)
         )
         val now = declareVar("now", ktimeGetNs())
         val cgroupId = declareVar("cgroup_id", getCurrentCgroupId())
@@ -45,25 +45,23 @@ fun cpudist() = ebpf("cpudist") {
         // Compute on-CPU time for the task being switched out
         val tsp = oncpuTs.lookup(prevPid)
         ifNonNull(tsp) { e ->
-            val varName = (e.expr as BpfExpr.VarRef).variable.name
-            val deltaNs = declareVar("delta_ns", now - raw("*$varName", BpfScalar.U64))
+            val deltaNs = declareVar("delta_ns", now - e.deref())
             oncpuTs.delete(prevPid)
 
             val hkey = stackVar(HistKey) { it[HistKey.cgroupId] = cgroupId }
             val hval = cpuDist.lookup(hkey)
             ifNonNull(hval) { he ->
-                val slot = declareVar("slot", raw("log2l(delta_ns) >= MAX_SLOTS ? MAX_SLOTS - 1 : log2l(delta_ns)", BpfScalar.U32))
+                val slot = declareVar("slot", histSlot(deltaNs, 27))
                 he[HistValue.slots].at(slot).atomicAdd(literal(1u, BpfScalar.U64))
                 he[HistValue.count].atomicAdd(literal(1u, BpfScalar.U64))
                 he[HistValue.sumNs].atomicAdd(deltaNs)
             }.elseThen {
-                val slot2 = declareVar("slot2", raw("log2l(delta_ns) >= MAX_SLOTS ? MAX_SLOTS - 1 : log2l(delta_ns)", BpfScalar.U32))
+                val slot2 = declareVar("slot2", histSlot(deltaNs, 27))
                 val newHval = stackVar(HistValue) {
                     it[HistValue.count] = literal(1u, BpfScalar.U64)
                     it[HistValue.sumNs] = deltaNs
                 }
-                val newHvalName = (newHval.expr as BpfExpr.VarRef).variable.name
-                declareVar("_arr_set", raw("($newHvalName.slots[slot2] = 1ULL, (__s32)0)", BpfScalar.S32))
+                declareVar("_arr_set", structArraySet(newHval, HistValue.slots, slot2, literal(1uL, BpfScalar.U64)))
                 cpuDist.update(hkey, newHval, flags = BPF_NOEXIST)
             }
         }

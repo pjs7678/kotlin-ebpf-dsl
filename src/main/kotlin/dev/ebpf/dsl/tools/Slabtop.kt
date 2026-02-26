@@ -31,6 +31,7 @@ object SlabStats : BpfStruct("slab_stats") {
 
 fun slabtop() = ebpf("slabtop") {
     license("GPL")
+    targetKernel("5.3")
 
     val slabStats by percpuHashMap(CgroupKey, SlabStats, maxEntries = 10240)
 

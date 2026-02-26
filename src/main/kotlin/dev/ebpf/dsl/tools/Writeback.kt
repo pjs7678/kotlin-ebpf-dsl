@@ -27,6 +27,7 @@ object WbStats : BpfStruct("wb_stats") {
 
 fun writeback() = ebpf("writeback") {
     license("GPL")
+    targetKernel("5.3")
 
     val wbStats by lruHashMap(CgroupKey, WbStats, maxEntries = 10240)
 

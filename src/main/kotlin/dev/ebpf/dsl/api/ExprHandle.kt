@@ -82,4 +82,9 @@ class ExprHandle(val expr: BpfExpr, private val builder: ProgramBodyBuilder) {
     operator fun get(field: StructField): ExprHandle {
         return ExprHandle(BpfExpr.FieldAccess(expr, field, field.type), builder)
     }
+
+    // ── Pointer dereference ─────────────────────────────────────────────
+
+    /** Dereference a pointer: `*this` */
+    fun deref(): ExprHandle = ExprHandle(BpfExpr.Deref(expr), builder)
 }

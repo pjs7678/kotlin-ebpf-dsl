@@ -2,13 +2,14 @@ package dev.ebpf.dsl.api
 
 import dev.ebpf.dsl.codegen.CCodeGenerator
 import dev.ebpf.dsl.codegen.KotlinCodeGenerator
+import dev.ebpf.dsl.kernel.KernelVersion
 import java.io.File
 
 data class OutputConfig(
     val cDir: String,
     val kotlinDir: String,
     val kotlinPackage: String,
-    val targetKernel: String = "5.15",
+    val targetKernel: KernelVersion = KernelVersion.V5_15,
     /** Fully-qualified class name of the BPF bridge to import in generated readers. */
     val bridgeImport: String? = null,
 )

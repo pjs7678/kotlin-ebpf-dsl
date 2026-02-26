@@ -1,7 +1,6 @@
 package dev.ebpf.dsl.tools
 
 import dev.ebpf.dsl.api.ebpf
-import dev.ebpf.dsl.ir.BpfExpr
 import dev.ebpf.dsl.types.BpfScalar
 
 /**
@@ -22,6 +21,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun softirqs() = ebpf("softirqs") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val softirqStart by scalarHashMap(BpfScalar.U64, BpfScalar.U64, maxEntries = 10240)
@@ -38,26 +38,24 @@ fun softirqs() = ebpf("softirqs") {
         val pidTgid = declareVar("pid_tgid", getCurrentPidTgid())
         val entry = softirqStart.lookup(pidTgid)
         ifNonNull(entry) { e ->
-            val varName = (e.expr as BpfExpr.VarRef).variable.name
-            val deltaNs = declareVar("delta_ns", ktimeGetNs() - raw("*$varName", BpfScalar.U64))
+            val deltaNs = declareVar("delta_ns", ktimeGetNs() - e.deref())
             softirqStart.delete(pidTgid)
 
             val cgroupId = declareVar("cgroup_id", getCurrentCgroupId())
             val hkey = stackVar(HistKey) { it[HistKey.cgroupId] = cgroupId }
             val hval = softirqLatency.lookup(hkey)
             ifNonNull(hval) { he ->
-                val slot = declareVar("slot", raw("log2l(delta_ns) >= MAX_SLOTS ? MAX_SLOTS - 1 : log2l(delta_ns)", BpfScalar.U32))
+                val slot = declareVar("slot", histSlot(deltaNs, 27))
                 he[HistValue.slots].at(slot).atomicAdd(literal(1u, BpfScalar.U64))
                 he[HistValue.count].atomicAdd(literal(1u, BpfScalar.U64))
                 he[HistValue.sumNs].atomicAdd(deltaNs)
             }.elseThen {
-                val slot2 = declareVar("slot2", raw("log2l(delta_ns) >= MAX_SLOTS ? MAX_SLOTS - 1 : log2l(delta_ns)", BpfScalar.U32))
+                val slot2 = declareVar("slot2", histSlot(deltaNs, 27))
                 val newHval = stackVar(HistValue) {
                     it[HistValue.count] = literal(1u, BpfScalar.U64)
                     it[HistValue.sumNs] = deltaNs
                 }
-                val newHvalName = (newHval.expr as BpfExpr.VarRef).variable.name
-                declareVar("_arr_set", raw("($newHvalName.slots[slot2] = 1ULL, (__s32)0)", BpfScalar.S32))
+                declareVar("_arr_set", structArraySet(newHval, HistValue.slots, slot2, literal(1uL, BpfScalar.U64)))
                 softirqLatency.update(hkey, newHval, flags = BPF_NOEXIST)
             }
         }

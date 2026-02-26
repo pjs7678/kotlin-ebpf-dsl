@@ -293,8 +293,8 @@ class ToolsTest {
         val c = tcplife().generateC()
         assertThat(c).contains("SEC(\"tp/sock/inet_sock_set_state\")")
         assertThat(c).contains("struct trace_event_raw_inet_sock_set_state")
-        assertThat(c).contains("__sport")
-        assertThat(c).contains("__dport")
+        assertThat(c).contains("->sport")
+        assertThat(c).contains("->dport")
         assertThat(c).contains("log2l(")
         assertThat(c).contains("__u64 slots[27]")
     }

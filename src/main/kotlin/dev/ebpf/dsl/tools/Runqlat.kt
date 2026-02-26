@@ -1,7 +1,6 @@
 package dev.ebpf.dsl.tools
 
 import dev.ebpf.dsl.api.ebpf
-import dev.ebpf.dsl.ir.BpfExpr
 import dev.ebpf.dsl.types.BpfScalar
 
 /**
@@ -23,6 +22,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun runqlat() = ebpf("runqlat") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val wakeupTs by scalarHashMap(BpfScalar.U32, BpfScalar.U64, maxEntries = 10240)
@@ -33,7 +33,7 @@ fun runqlat() = ebpf("runqlat") {
     tracepoint("sched", "sched_wakeup") {
         val pid = declareVar(
             "pid",
-            raw("((struct trace_event_raw_sched_wakeup_template *)ctx)->pid", BpfScalar.U32)
+            tracepointField("trace_event_raw_sched_wakeup_template", "pid", BpfScalar.U32)
         )
         val ts = declareVar("ts", ktimeGetNs())
         wakeupTs.update(pid, ts, flags = BPF_ANY)
@@ -44,7 +44,7 @@ fun runqlat() = ebpf("runqlat") {
     tracepoint("sched", "sched_switch") {
         val nextPid = declareVar(
             "next_pid",
-            raw("((struct trace_event_raw_sched_switch *)ctx)->next_pid", BpfScalar.U32)
+            tracepointField("trace_event_raw_sched_switch", "next_pid", BpfScalar.U32)
         )
         val cgroupId = declareVar("cgroup_id", getCurrentCgroupId())
 
@@ -65,11 +65,7 @@ fun runqlat() = ebpf("runqlat") {
         // Look up wakeup timestamp for next_pid
         val tsp = wakeupTs.lookup(nextPid)
         ifNonNull(tsp) { e ->
-            val tspVarName = (e.expr as BpfExpr.VarRef).variable.name
-            val deltaNs = declareVar(
-                "delta_ns",
-                ktimeGetNs() - raw("*$tspVarName", BpfScalar.U64)
-            )
+            val deltaNs = declareVar("delta_ns", ktimeGetNs() - e.deref())
             wakeupTs.delete(nextPid)
 
             // Update run-queue latency histogram
@@ -78,27 +74,17 @@ fun runqlat() = ebpf("runqlat") {
             }
             val hval = runqLatency.lookup(hkey)
             ifNonNull(hval) { he ->
-                val slot = declareVar(
-                    "slot",
-                    raw("log2l(delta_ns) >= MAX_SLOTS ? MAX_SLOTS - 1 : log2l(delta_ns)", BpfScalar.U32)
-                )
+                val slot = declareVar("slot", histSlot(deltaNs, 27))
                 he[HistValue.slots].at(slot).atomicAdd(literal(1u, BpfScalar.U64))
                 he[HistValue.count].atomicAdd(literal(1u, BpfScalar.U64))
                 he[HistValue.sumNs].atomicAdd(deltaNs)
             }.elseThen {
-                val slot2 = declareVar(
-                    "slot2",
-                    raw("log2l(delta_ns) >= MAX_SLOTS ? MAX_SLOTS - 1 : log2l(delta_ns)", BpfScalar.U32)
-                )
+                val slot2 = declareVar("slot2", histSlot(deltaNs, 27))
                 val newHval = stackVar(HistValue) {
                     it[HistValue.count] = literal(1u, BpfScalar.U64)
                     it[HistValue.sumNs] = deltaNs
                 }
-                val newHvalName = (newHval.expr as BpfExpr.VarRef).variable.name
-                declareVar(
-                    "_arr_set",
-                    raw("($newHvalName.slots[slot2] = 1ULL, (__s32)0)", BpfScalar.S32)
-                )
+                declareVar("_arr_set", structArraySet(newHval, HistValue.slots, slot2, literal(1uL, BpfScalar.U64)))
                 runqLatency.update(hkey, newHval, flags = BPF_NOEXIST)
             }
         }

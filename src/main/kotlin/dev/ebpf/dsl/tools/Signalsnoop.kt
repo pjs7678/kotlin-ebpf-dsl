@@ -19,6 +19,7 @@ import dev.ebpf.dsl.types.BpfScalar
  */
 fun signalsnoop() = ebpf("signalsnoop") {
     license("GPL")
+    targetKernel("5.3")
 
     val signalCount by lruHashMap(CgroupKey, Counter, maxEntries = 10240)
 

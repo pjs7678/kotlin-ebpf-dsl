@@ -12,11 +12,13 @@ class SemanticAnalyzer(private val model: BpfProgramModel) {
     private val diagnostics = mutableListOf<Diagnostic>()
 
     fun analyze(): ValidationResult {
+        checkKernelCompatibility()
         checkMapAntiPatterns()
         for (program in model.programs) {
             checkStackUsage(program)
             checkUnreachableCode(program.body, program.name)
             checkDivisionSafety(program)
+            checkRawUsage(program)
         }
         return ValidationResult.from(diagnostics)
     }
@@ -103,6 +105,45 @@ class SemanticAnalyzer(private val model: BpfProgramModel) {
         }
     }
 
+    private fun checkRawUsage(program: ProgramDef) {
+        walkExprs(program.body, program.name) { expr, progName ->
+            if (expr is BpfExpr.Raw) {
+                diagnostics.add(
+                    Diagnostic(
+                        DiagnosticLevel.WARNING, "raw-expr",
+                        "raw() escape hatch used. Consider type-safe alternatives: tracepointField(), kprobeParam(), deref(), histSlot(), etc.",
+                        progName,
+                    )
+                )
+            }
+        }
+    }
+
+    private fun checkKernelCompatibility() {
+        for (map in model.maps) {
+            if (map.mapType.minKernel > model.targetKernel) {
+                diagnostics.add(
+                    Diagnostic(
+                        DiagnosticLevel.ERROR, "kernel-version",
+                        "Map '${map.name}' uses ${map.mapType.name} which requires kernel ${map.mapType.minKernel}+, but target is ${model.targetKernel}",
+                        null,
+                    )
+                )
+            }
+        }
+        for (prog in model.programs) {
+            if (prog.type.minKernel > model.targetKernel) {
+                diagnostics.add(
+                    Diagnostic(
+                        DiagnosticLevel.ERROR, "kernel-version",
+                        "Program '${prog.name}' uses ${prog.type::class.simpleName} which requires kernel ${prog.type.minKernel}+, but target is ${model.targetKernel}",
+                        prog.name,
+                    )
+                )
+            }
+        }
+    }
+
     private fun checkMapAntiPatterns() {
         for (map in model.maps) {
             if (map.mapType == MapType.HASH && map.maxEntries > 50000) {
@@ -174,7 +215,21 @@ class SemanticAnalyzer(private val model: BpfProgramModel) {
                 walkExpr(expr.value, programName, visitor)
             }
             is BpfExpr.Cast -> walkExpr(expr.expr, programName, visitor)
-            is BpfExpr.Literal, is BpfExpr.VarRef, is BpfExpr.Raw -> {}
+            is BpfExpr.Deref -> walkExpr(expr.operand, programName, visitor)
+            is BpfExpr.HistSlot -> walkExpr(expr.value, programName, visitor)
+            is BpfExpr.Ternary -> {
+                walkExpr(expr.cond, programName, visitor)
+                walkExpr(expr.then, programName, visitor)
+                walkExpr(expr.else_, programName, visitor)
+            }
+            is BpfExpr.StructArraySet -> {
+                walkExpr(expr.structVar, programName, visitor)
+                walkExpr(expr.index, programName, visitor)
+                walkExpr(expr.value, programName, visitor)
+            }
+            is BpfExpr.CTypeCast -> walkExpr(expr.operand, programName, visitor)
+            is BpfExpr.Literal, is BpfExpr.VarRef, is BpfExpr.Raw,
+            is BpfExpr.TracepointField, is BpfExpr.KprobeParam, is BpfExpr.RawTpArg -> {}
         }
     }
 }

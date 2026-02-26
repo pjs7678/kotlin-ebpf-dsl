@@ -1,7 +1,6 @@
 package dev.ebpf.dsl.tools
 
 import dev.ebpf.dsl.api.ebpf
-import dev.ebpf.dsl.ir.BpfExpr
 import dev.ebpf.dsl.types.BpfScalar
 import dev.ebpf.dsl.types.BpfStruct
 
@@ -36,6 +35,7 @@ object TcpStats : BpfStruct("tcp_stats") {
 
 fun tcpconnect() = ebpf("tcpconnect") {
     license("GPL")
+    targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
 
     val tcpStats by lruHashMap(CgroupKey, TcpStats, maxEntries = 10240)
@@ -43,7 +43,7 @@ fun tcpconnect() = ebpf("tcpconnect") {
 
     // Track bytes sent
     kprobe("tcp_sendmsg") {
-        val size = declareVar("size", raw("(size_t)PT_REGS_PARM3(ctx)", BpfScalar.U64))
+        val size = declareVar("size", kprobeParam(3, "size_t"))
         val cgroupId = declareVar("cgroup_id", getCurrentCgroupId())
         val key = stackVar(CgroupKey) {
             it[CgroupKey.cgroupId] = cgroupId
@@ -62,7 +62,7 @@ fun tcpconnect() = ebpf("tcpconnect") {
 
     // Track bytes received
     kprobe("tcp_recvmsg") {
-        val len = declareVar("len", raw("(size_t)PT_REGS_PARM3(ctx)", BpfScalar.U64))
+        val len = declareVar("len", kprobeParam(3, "size_t"))
         val cgroupId = declareVar("cgroup_id", getCurrentCgroupId())
         val key = stackVar(CgroupKey) {
             it[CgroupKey.cgroupId] = cgroupId
@@ -101,7 +101,7 @@ fun tcpconnect() = ebpf("tcpconnect") {
     tracepoint("sock", "inet_sock_set_state") {
         val newstate = declareVar(
             "newstate",
-            raw("((struct trace_event_raw_inet_sock_set_state *)ctx)->newstate", BpfScalar.S32)
+            tracepointField("trace_event_raw_inet_sock_set_state", "newstate", BpfScalar.S32)
         )
         val cgroupId = declareVar("cgroup_id", getCurrentCgroupId())
 
@@ -127,7 +127,7 @@ fun tcpconnect() = ebpf("tcpconnect") {
         val cgroupId = declareVar("cgroup_id", getCurrentCgroupId())
         val srttUs = declareVar(
             "srtt_us",
-            raw("((struct trace_event_raw_tcp_probe *)ctx)->srtt", BpfScalar.U32)
+            tracepointField("trace_event_raw_tcp_probe", "srtt", BpfScalar.U32)
         )
 
         // Update rtt_sum_us and rtt_count in tcp_stats
@@ -141,33 +141,23 @@ fun tcpconnect() = ebpf("tcpconnect") {
         }
 
         // Update RTT histogram
-        val rttNs = declareVar("rtt_ns", raw("(__u64)srtt_us * 1000", BpfScalar.U64))
+        val rttNs = declareVar("rtt_ns", cTypeCast("__u64", srttUs, BpfScalar.U64) * literal(1000, BpfScalar.U64))
         val hkey = stackVar(HistKey) {
             it[HistKey.cgroupId] = cgroupId
         }
         val hval = rttHist.lookup(hkey)
         ifNonNull(hval) { he ->
-            val slot = declareVar(
-                "slot",
-                raw("log2l(rtt_ns) >= MAX_SLOTS ? MAX_SLOTS - 1 : log2l(rtt_ns)", BpfScalar.U32)
-            )
+            val slot = declareVar("slot", histSlot(rttNs, 27))
             he[HistValue.slots].at(slot).atomicAdd(literal(1u, BpfScalar.U64))
             he[HistValue.count].atomicAdd(literal(1u, BpfScalar.U64))
             he[HistValue.sumNs].atomicAdd(rttNs)
         }.elseThen {
-            val slot2 = declareVar(
-                "slot2",
-                raw("log2l(rtt_ns) >= MAX_SLOTS ? MAX_SLOTS - 1 : log2l(rtt_ns)", BpfScalar.U32)
-            )
+            val slot2 = declareVar("slot2", histSlot(rttNs, 27))
             val newHval = stackVar(HistValue) {
                 it[HistValue.count] = literal(1u, BpfScalar.U64)
                 it[HistValue.sumNs] = rttNs
             }
-            val newHvalName = (newHval.expr as BpfExpr.VarRef).variable.name
-            declareVar(
-                "_arr_set",
-                raw("($newHvalName.slots[slot2] = 1ULL, (__s32)0)", BpfScalar.S32)
-            )
+            declareVar("_arr_set", structArraySet(newHval, HistValue.slots, slot2, literal(1uL, BpfScalar.U64)))
             rttHist.update(hkey, newHval, flags = BPF_NOEXIST)
         }
 
