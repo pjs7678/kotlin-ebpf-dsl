@@ -9,12 +9,41 @@ Writing eBPF programs in C is error-prone: wrong helper calls, stack overflows, 
 - **Type-safe structs** with automatic C ABI layout (alignment, padding)
 - **3-phase validation** &mdash; construction-time checks, type checker, semantic analyzer
 - **Dual codegen** &mdash; generates both `.bpf.c` files and Kotlin `MapReader` classes
+- **12 ready-to-use BCC-style tools** &mdash; biolatency, runqlat, execsnoop, tcpconnect, and more
 - **31 BPF helpers** with per-program-type availability and GPL enforcement
 - **14 program types** &mdash; tracepoint, kprobe, kretprobe, fentry, fexit, XDP, TC, cgroup, LSM, and more
 
-## Quick Start
+## Quick Start: Use a Built-in Tool
+
+The fastest way to get started &mdash; pick a tool, validate, generate:
 
 ```kotlin
+import dev.ebpf.dsl.tools.*
+import dev.ebpf.dsl.api.*
+
+val program = biolatency()
+program.validate().throwOnError()
+
+// Generate C and Kotlin
+val c = program.generateC()                          // biolatency.bpf.c
+val kt = program.generateKotlin("com.example.bio")   // BiolatencyMapReader.kt
+
+// Or emit both to disk
+program.emit(OutputConfig(
+    cDir = "bpf/",
+    kotlinDir = "src/main/kotlin/",
+    kotlinPackage = "com.example.bio"
+))
+```
+
+See [BCC-Style Tools](#bcc-style-tools) for the full list of 12 ready-to-use tools.
+
+## Quick Start: Write a Custom Program
+
+```kotlin
+import dev.ebpf.dsl.api.*
+import dev.ebpf.dsl.types.*
+
 // 1. Define structs
 object CgroupKey : BpfStruct("cgroup_key") {
     val cgroupId by u64()
@@ -44,19 +73,11 @@ val program = ebpf("oom_mon") {
 }
 
 // 3. Validate
-val result = program.validate()
-result.throwOnError()
+program.validate().throwOnError()
 
 // 4. Generate
-val c = program.generateC()         // .bpf.c source
-val kt = program.generateKotlin("com.example.oom")  // Kotlin MapReader
-
-// Or emit both to disk
-program.emit(OutputConfig(
-    cDir = "bpf/",
-    kotlinDir = "src/main/kotlin/",
-    kotlinPackage = "com.example.oom"
-))
+val c = program.generateC()
+val kt = program.generateKotlin("com.example.oom")
 ```
 
 ### Generated C
@@ -126,9 +147,54 @@ class OomMonMapReader {
 }
 ```
 
-No more manual `ByteBuffer` parsing — the generated reader handles endianness, offsets, and alignment.
+No more manual `ByteBuffer` parsing &mdash; the generated reader handles endianness, offsets, and alignment.
 
-## Features
+## BCC-Style Tools
+
+12 ready-to-use eBPF programs inspired by [BCC tools](https://github.com/iovisor/bcc), adapted for per-cgroup (pod-level) aggregation in Kubernetes.
+
+| Tool | Description | Hook Type |
+|------|-------------|-----------|
+| `execsnoop()` | Process exec/exit/fork counting | tracepoint (sched) |
+| `oomkill()` | OOM kill event counting | tracepoint (oom) |
+| `runqlat()` | CPU run queue latency histogram | tracepoint (sched) |
+| `tcpconnect()` | TCP bytes, retransmits, connections, RTT | kprobe + tracepoint |
+| `vfsstat()` | VFS read/write/open/fsync counting | kprobe |
+| `biolatency()` | Block I/O latency histogram | kprobe (blk-mq) |
+| `hardirqs()` | Hardware interrupt latency histogram | tracepoint (irq) |
+| `softirqs()` | Software interrupt latency histogram | tracepoint (irq) |
+| `cachestat()` | Page cache hit/add/dirty counting | kprobe |
+| `cpudist()` | On-CPU time distribution histogram | tracepoint (sched) |
+| `dcstat()` | Directory cache (dcache) hit/miss counting | kprobe |
+| `tcpdrop()` | TCP packet drop counting | kprobe |
+
+Each tool generates:
+- `.bpf.c` with proper SEC annotations, struct definitions, and LRU hash maps
+- Kotlin `MapReader` class with type-safe `ByteBuffer` deserialization
+
+### Tool Registry
+
+Discover and build tools programmatically via `ToolRegistry`:
+
+```kotlin
+import dev.ebpf.dsl.tools.ToolRegistry
+import dev.ebpf.dsl.api.*
+
+// List all available tools
+ToolRegistry.all().forEach { tool ->
+    println("${tool.name}: ${tool.description} [${tool.hookTypes.joinToString()}]")
+}
+
+// Build by name
+val program = ToolRegistry.byName("runqlat")!!.build()
+program.validate().throwOnError()
+println(program.generateC())
+
+// Filter by hook type
+val kprobeTools = ToolRegistry.byHookType("kprobe")
+```
+
+## DSL Reference
 
 ### Struct Types
 
@@ -169,7 +235,7 @@ sockOps { /* ... */ }
 lsm("bprm_check_security") { /* ... */ }
 ```
 
-14 program types supported: tracepoint, raw_tracepoint, kprobe, kretprobe, fentry, fexit, XDP, TC, cgroup_skb, sockops, socket_filter, LSM, iter, sched_classifier.
+14 program types: tracepoint, raw_tracepoint, kprobe, kretprobe, fentry, fexit, XDP, TC, cgroup_skb, sockops, socket_filter, LSM, iter, sched_classifier.
 
 ### Control Flow
 
@@ -207,7 +273,24 @@ val shifted = a shr literal(3, BpfScalar.U64)
 
 ### Helpers
 
-Available helpers include: `getCurrentPidTgid()`, `getCurrentCgroupId()`, `ktimeGetNs()`, `smpProcessorId()`, `getCurrentTask()`, `getCurrentTaskBtf()`, `tracePrintk()`, `probeReadKernel()`
+31 BPF helpers with per-program-type availability enforcement:
+
+| Category | Helpers |
+|----------|---------|
+| Process | `getCurrentPidTgid()`, `getCurrentUidGid()`, `getCurrentComm()`, `getCurrentTask()`, `getCurrentTaskBtf()` |
+| Cgroup | `getCurrentCgroupId()` |
+| Time | `ktimeGetNs()` |
+| CPU | `smpProcessorId()` |
+| Memory | `probeReadKernel()`, `probeReadUser()` |
+| Map | `mapLookupElem()`, `mapUpdateElem()`, `mapDeleteElem()` |
+| Ring buffer | `ringbufOutput()`, `ringbufReserve()`, `ringbufSubmit()`, `ringbufDiscard()` |
+| Perf | `perfEventOutput()` |
+| XDP | `xdpAdjustHead()`, `xdpAdjustTail()`, `redirect()` |
+| TC/Socket | `skbLoadBytes()`, `skbStoreBytes()`, `csumDiff()` |
+| Debug | `tracePrintk()` |
+| Signal | `sendSignal()` |
+| Stack | `getStack()`, `getStackId()`, `tailCall()` |
+| Sync | `spinLock()`, `spinUnlock()` |
 
 The DSL enforces helper availability per program type &mdash; calling `getCurrentCgroupId()` inside an XDP program is a validation error.
 
@@ -248,70 +331,6 @@ Requires JDK 21+.
 
 217 tests covering types, IR, maps, programs, DSL builders, validation, codegen, BCC-style tools, and end-to-end integration.
 
-## BCC-Style Tools
-
-Ready-to-use eBPF programs inspired by [BCC tools](https://github.com/iovisor/bcc), adapted for per-cgroup (pod-level) aggregation. Import from `dev.ebpf.dsl.tools`:
-
-| Tool | Description | Hook Type |
-|------|-------------|-----------|
-| `execsnoop()` | Process exec/exit/fork counting | tracepoint (sched) |
-| `oomkill()` | OOM kill event counting | tracepoint (oom) |
-| `runqlat()` | CPU run queue latency histogram | tracepoint (sched) |
-| `tcpconnect()` | TCP bytes, retransmits, connections, RTT | kprobe + tracepoint |
-| `vfsstat()` | VFS read/write/open/fsync counting | kprobe |
-| `biolatency()` | Block I/O latency histogram | kprobe (blk-mq) |
-| `hardirqs()` | Hardware interrupt latency histogram | tracepoint (irq) |
-| `softirqs()` | Software interrupt latency histogram | tracepoint (irq) |
-| `cachestat()` | Page cache hit/add/dirty counting | kprobe |
-| `cpudist()` | On-CPU time distribution histogram | tracepoint (sched) |
-| `dcstat()` | Directory cache (dcache) hit/miss counting | kprobe |
-| `tcpdrop()` | TCP packet drop counting | kprobe |
-
-```kotlin
-import dev.ebpf.dsl.tools.*
-import dev.ebpf.dsl.api.*
-
-// Generate production-ready C and Kotlin reader
-val program = biolatency()
-program.validate().throwOnError()
-
-val c = program.generateC()       // biolatency.bpf.c
-val kt = program.generateKotlin("com.example.bio")  // BiolatencyMapReader.kt
-
-// Or emit both to disk
-program.emit(OutputConfig(
-    cDir = "bpf/",
-    kotlinDir = "src/main/kotlin/",
-    kotlinPackage = "com.example.bio"
-))
-```
-
-Each tool generates:
-- `.bpf.c` with proper SEC annotations, struct definitions, and LRU hash maps
-- Kotlin `MapReader` class with type-safe `ByteBuffer` deserialization
-
-### Tool Registry
-
-Discover and build tools programmatically via `ToolRegistry`:
-
-```kotlin
-import dev.ebpf.dsl.tools.ToolRegistry
-import dev.ebpf.dsl.api.*
-
-// List all available tools
-ToolRegistry.all().forEach { tool ->
-    println("${tool.name}: ${tool.description} [${tool.hookTypes.joinToString()}]")
-}
-
-// Build by name
-val program = ToolRegistry.byName("runqlat")!!.build()
-program.validate().throwOnError()
-println(program.generateC())
-
-// Filter by hook type
-val kprobeTools = ToolRegistry.byHookType("kprobe")
-```
-
 ## Usage as Composite Build
 
 Include kotlin-ebpf-dsl in your Gradle project as a composite build:
@@ -347,8 +366,8 @@ See [kpod-metrics](https://github.com/pjs7678/kpod-metrics) for a full integrati
 src/main/kotlin/dev/ebpf/dsl/
   types/        BpfScalar, BpfStruct, BpfArrayType, StructField
   ir/           BpfExpr, BpfStmt, Op, Variable (AST nodes)
-  maps/         MapType, MapDecl, MapCapabilities
-  programs/     ProgramType, BpfHelper, HelperRegistry
+  maps/         MapType (17 types), MapDecl, MapCapabilities
+  programs/     ProgramType (14 types), BpfHelper, HelperRegistry (31 helpers)
   api/          ebpf() builder, ProgramBodyBuilder, ExprHandle, MapHandle
   validation/   TypeChecker, SemanticAnalyzer, Diagnostic
   codegen/      CCodeGenerator, KotlinCodeGenerator
