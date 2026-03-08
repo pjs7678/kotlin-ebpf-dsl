@@ -71,7 +71,8 @@ class NewExprTest {
                 returnValue(literal(0, BpfScalar.S32))
             }
         }.generateC()
-        assertThat(c).contains("log2l(ns) >= 27 ? 26 : log2l(ns)")
+        assertThat(c).contains("__u32 slot = log2l(ns);")
+        assertThat(c).contains("if (slot >= 27) slot = 26;")
     }
 
     @Test

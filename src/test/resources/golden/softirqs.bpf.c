@@ -12,7 +12,9 @@ char LICENSE[] SEC("license") = "GPL";
 
 static __always_inline __u32 log2l(__u64 v) {
     __u32 r = 0;
-    while (v > 1) {
+    #pragma unroll
+    for (int i = 0; i < 64; i++) {
+        if (v <= 1) break;
         v >>= 1;
         r++;
     }
@@ -65,12 +67,14 @@ int tp_irq_softirq_exit(void *ctx)
         var_1.cgroup_id = cgroup_id;
         struct hist_value *entry_2 = bpf_map_lookup_elem(&softirq_latency, &var_1);
         if (entry_2) {
-            __u32 slot = log2l(delta_ns) >= 27 ? 26 : log2l(delta_ns);
+            __u32 slot = log2l(delta_ns);
+            if (slot >= 27) slot = 26;
             __sync_fetch_and_add(&entry_2->slots[slot], 1ULL);
             __sync_fetch_and_add(&entry_2->count, 1ULL);
             __sync_fetch_and_add(&entry_2->sum_ns, delta_ns);
         } else {
-            __u32 slot2 = log2l(delta_ns) >= 27 ? 26 : log2l(delta_ns);
+            __u32 slot2 = log2l(delta_ns);
+            if (slot2 >= 27) slot2 = 26;
             struct hist_value var_3 = {};
             var_3.count = 1ULL;
             var_3.sum_ns = delta_ns;

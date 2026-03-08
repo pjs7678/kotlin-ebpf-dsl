@@ -174,6 +174,11 @@ class CCodeGenerator(private val model: BpfProgramModel) {
                             sb.appendLine("${pad}${type.cName} ${v.name} = 0;")
                             val src = init.args.joinToString(", ") { renderExpr(it) }
                             sb.appendLine("${pad}${init.helperName}(&${v.name}, sizeof(${v.name}), (const void *)${src});")
+                        } else if (init is BpfExpr.HistSlot) {
+                            // Emit log2l call + bounds check as separate statements
+                            // so the BPF verifier can track the bounded value
+                            sb.appendLine("${pad}${type.cName} ${v.name} = log2l(${renderExpr(init.value)});")
+                            sb.appendLine("${pad}if (${v.name} >= ${init.maxSlots}) ${v.name} = ${init.maxSlots - 1};")
                         } else {
                             sb.appendLine("${pad}${type.cName} ${v.name} = ${renderExpr(stmt.init)};")
                         }
@@ -261,7 +266,7 @@ class CCodeGenerator(private val model: BpfProgramModel) {
         is BpfExpr.TracepointField -> "((struct ${expr.structName} *)ctx)->${expr.fieldName}"
         is BpfExpr.KprobeParam -> "(${expr.castType})PT_REGS_PARM${expr.index}(ctx)"
         is BpfExpr.RawTpArg -> "(${expr.castType})ctx->args[${expr.index}]"
-        is BpfExpr.HistSlot -> "log2l(${renderExpr(expr.value)}) >= ${expr.maxSlots} ? ${expr.maxSlots - 1} : log2l(${renderExpr(expr.value)})"
+        is BpfExpr.HistSlot -> "({ __u32 _s = log2l(${renderExpr(expr.value)}); if (_s >= ${expr.maxSlots}) _s = ${expr.maxSlots - 1}; _s; })"
         is BpfExpr.Ternary -> "(${renderExpr(expr.cond)}) ? ${renderExpr(expr.then)} : ${renderExpr(expr.else_)}"
         is BpfExpr.StructArraySet -> "(${renderExpr(expr.structVar)}.${expr.field.name}[${renderExpr(expr.index)}] = ${renderExpr(expr.value)}, (__s32)0)"
         is BpfExpr.CTypeCast -> "(${expr.cTypeName})${renderExpr(expr.operand)}"
