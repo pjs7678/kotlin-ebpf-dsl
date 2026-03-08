@@ -219,6 +219,7 @@ class EbpfProgramBuilder(private val name: String) {
         is BpfStmt.AtomicOp -> exprContainsHistSlot(stmt.target) || exprContainsHistSlot(stmt.operand)
         is BpfStmt.ExprStmt -> exprContainsHistSlot(stmt.expr)
         is BpfStmt.MapDelete -> exprContainsHistSlot(stmt.key)
+        is BpfStmt.ProbeReadBuf -> exprContainsHistSlot(stmt.srcPtr)
     }
 
     private fun exprContainsHistSlot(expr: BpfExpr): Boolean = when (expr) {
@@ -236,7 +237,8 @@ class EbpfProgramBuilder(private val name: String) {
         is BpfExpr.MapLookup -> exprContainsHistSlot(expr.key)
         is BpfExpr.MapUpdate -> exprContainsHistSlot(expr.key) || exprContainsHistSlot(expr.value)
         is BpfExpr.Literal, is BpfExpr.VarRef, is BpfExpr.Raw,
-        is BpfExpr.TracepointField, is BpfExpr.KprobeParam, is BpfExpr.RawTpArg -> false
+        is BpfExpr.TracepointField, is BpfExpr.KprobeParam, is BpfExpr.RawTpArg,
+        is BpfExpr.BufferByte, is BpfExpr.BufferMultiByte, is BpfExpr.KretprobeReturn -> false
     }
 
     companion object {

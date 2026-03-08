@@ -62,4 +62,19 @@ sealed class BpfExpr {
     data class MapUpdate(val mapName: String, val key: BpfExpr, val value: BpfExpr, val flags: Long) : BpfExpr() {
         override val type: BpfType get() = BpfScalar.S32 // returns int
     }
+
+    /** Single byte access from a stack buffer: `((__u8)__buf_N[index])` */
+    data class BufferByte(val bufferName: String, val index: Int) : BpfExpr() {
+        override val type: BpfType get() = BpfScalar.U8
+    }
+
+    /** Multi-byte read from a stack buffer with optional endian swap */
+    data class BufferMultiByte(val bufferName: String, val offset: Int, val readType: BpfScalar, val bigEndian: Boolean) : BpfExpr() {
+        override val type: BpfType get() = readType
+    }
+
+    /** Kretprobe return value: `(cast)PT_REGS_RC(ctx)` */
+    data class KretprobeReturn(val castType: BpfScalar) : BpfExpr() {
+        override val type: BpfType get() = castType
+    }
 }

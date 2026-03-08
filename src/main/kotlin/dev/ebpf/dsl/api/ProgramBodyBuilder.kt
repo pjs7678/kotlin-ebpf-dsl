@@ -18,6 +18,7 @@ class ProgramBodyBuilder(
 ) {
     internal val stmts = mutableListOf<BpfStmt>()
     private var varCounter = 0
+    private var bufferCounter = 0
 
     internal fun addStmt(stmt: BpfStmt) {
         stmts.add(stmt)
@@ -93,6 +94,22 @@ class ProgramBodyBuilder(
     fun smpProcessorId() = helperCall("bpf_get_smp_processor_id")
     fun getCurrentTask() = helperCall("bpf_get_current_task")
     fun getCurrentTaskBtf() = helperCall("bpf_get_current_task_btf")
+    fun getSocketCookie() = helperCall("bpf_get_socket_cookie")
+
+    fun kretprobeReturnValue(type: BpfScalar = BpfScalar.S32): ExprHandle =
+        ExprHandle(BpfExpr.KretprobeReturn(type), this)
+
+    fun probeReadBuf(ptr: ExprHandle, size: Int): BufferHandle {
+        val name = "__buf_${bufferCounter++}"
+        addStmt(BpfStmt.ProbeReadBuf(name, size, ptr.expr, useUserRead = false))
+        return BufferHandle(name, size, this)
+    }
+
+    fun probeReadUser(ptr: ExprHandle, size: Int): BufferHandle {
+        val name = "__buf_${bufferCounter++}"
+        addStmt(BpfStmt.ProbeReadBuf(name, size, ptr.expr, useUserRead = true))
+        return BufferHandle(name, size, this)
+    }
 
     fun tracePrintk(fmt: String, vararg args: ExprHandle) =
         helperCall("bpf_trace_printk", args.toList())

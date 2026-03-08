@@ -10,4 +10,5 @@ sealed class BpfStmt {
     data class AtomicOp(val op: AtomicOpKind, val target: BpfExpr, val operand: BpfExpr) : BpfStmt()
     data class ExprStmt(val expr: BpfExpr) : BpfStmt()
     data class MapDelete(val mapName: String, val key: BpfExpr) : BpfStmt()
+    data class ProbeReadBuf(val bufferName: String, val size: Int, val srcPtr: BpfExpr, val useUserRead: Boolean = false) : BpfStmt()
 }

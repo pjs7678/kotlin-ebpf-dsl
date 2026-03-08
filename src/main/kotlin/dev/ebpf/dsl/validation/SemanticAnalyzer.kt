@@ -191,6 +191,7 @@ class SemanticAnalyzer(private val model: BpfProgramModel) {
                 }
                 is BpfStmt.ExprStmt -> walkExpr(stmt.expr, programName, visitor)
                 is BpfStmt.MapDelete -> walkExpr(stmt.key, programName, visitor)
+                is BpfStmt.ProbeReadBuf -> walkExpr(stmt.srcPtr, programName, visitor)
             }
         }
     }
@@ -229,7 +230,8 @@ class SemanticAnalyzer(private val model: BpfProgramModel) {
             }
             is BpfExpr.CTypeCast -> walkExpr(expr.operand, programName, visitor)
             is BpfExpr.Literal, is BpfExpr.VarRef, is BpfExpr.Raw,
-            is BpfExpr.TracepointField, is BpfExpr.KprobeParam, is BpfExpr.RawTpArg -> {}
+            is BpfExpr.TracepointField, is BpfExpr.KprobeParam, is BpfExpr.RawTpArg,
+            is BpfExpr.BufferByte, is BpfExpr.BufferMultiByte, is BpfExpr.KretprobeReturn -> {}
         }
     }
 }
