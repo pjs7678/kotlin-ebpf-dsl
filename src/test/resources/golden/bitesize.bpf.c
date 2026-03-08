@@ -12,7 +12,9 @@ char LICENSE[] SEC("license") = "GPL";
 
 static __always_inline __u32 log2l(__u64 v) {
     __u32 r = 0;
-    while (v > 1) {
+    #pragma unroll
+    for (int i = 0; i < 64; i++) {
+        if (v <= 1) break;
         v >>= 1;
         r++;
     }
@@ -45,12 +47,14 @@ int kprobe_blk_mq_start_request(struct pt_regs *ctx)
     var_0.cgroup_id = cgroup_id;
     struct hist_value *entry_1 = bpf_map_lookup_elem(&io_size, &var_0);
     if (entry_1) {
-        __u32 slot = log2l(bytes) >= 27 ? 26 : log2l(bytes);
+        __u32 slot = log2l(bytes);
+        if (slot >= 27) slot = 26;
         __sync_fetch_and_add(&entry_1->slots[slot], 1ULL);
         __sync_fetch_and_add(&entry_1->count, 1ULL);
         __sync_fetch_and_add(&entry_1->sum_ns, bytes);
     } else {
-        __u32 slot2 = log2l(bytes) >= 27 ? 26 : log2l(bytes);
+        __u32 slot2 = log2l(bytes);
+        if (slot2 >= 27) slot2 = 26;
         struct hist_value var_2 = {};
         var_2.count = 1ULL;
         var_2.sum_ns = bytes;

@@ -12,7 +12,9 @@ char LICENSE[] SEC("license") = "GPL";
 
 static __always_inline __u32 log2l(__u64 v) {
     __u32 r = 0;
-    while (v > 1) {
+    #pragma unroll
+    for (int i = 0; i < 64; i++) {
+        if (v <= 1) break;
         v >>= 1;
         r++;
     }
@@ -146,12 +148,14 @@ int tp_tcp_tcp_probe(void *ctx)
     var_2.cgroup_id = cgroup_id;
     struct hist_value *entry_3 = bpf_map_lookup_elem(&rtt_hist, &var_2);
     if (entry_3) {
-        __u32 slot = log2l(rtt_ns) >= 27 ? 26 : log2l(rtt_ns);
+        __u32 slot = log2l(rtt_ns);
+        if (slot >= 27) slot = 26;
         __sync_fetch_and_add(&entry_3->slots[slot], 1ULL);
         __sync_fetch_and_add(&entry_3->count, 1ULL);
         __sync_fetch_and_add(&entry_3->sum_ns, rtt_ns);
     } else {
-        __u32 slot2 = log2l(rtt_ns) >= 27 ? 26 : log2l(rtt_ns);
+        __u32 slot2 = log2l(rtt_ns);
+        if (slot2 >= 27) slot2 = 26;
         struct hist_value var_4 = {};
         var_4.count = 1ULL;
         var_4.sum_ns = rtt_ns;
