@@ -169,6 +169,11 @@ object HelperRegistry {
             returnType = BpfScalar.S32, paramTypes = emptyList(),
             gplOnly = false, availableIn = NETWORKING,
         ))
+        register(BpfHelper(
+            id = 46, name = "bpf_get_socket_cookie",
+            returnType = BpfScalar.U64, paramTypes = emptyList(),
+            gplOnly = false, availableIn = NETWORKING + TRACING,
+        ))
 
         // ── Ring buffer helpers (universal, kernel 5.8+) ─────────────────
         register(BpfHelper(

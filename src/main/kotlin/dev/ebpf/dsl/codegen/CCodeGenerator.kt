@@ -239,6 +239,12 @@ class CCodeGenerator(private val model: BpfProgramModel) {
             is BpfStmt.ExprStmt -> {
                 sb.appendLine("${pad}${renderExpr(stmt.expr)};")
             }
+            is BpfStmt.ProbeReadBuf -> {
+                val helperName = if (stmt.useUserRead) "bpf_probe_read_user" else "bpf_probe_read_kernel"
+                sb.appendLine("${pad}char ${stmt.bufferName}[${stmt.size}];")
+                sb.appendLine("${pad}__builtin_memset(&${stmt.bufferName}, 0, sizeof(${stmt.bufferName}));")
+                sb.appendLine("${pad}${helperName}(&${stmt.bufferName}, ${stmt.size}, (const void *)${renderExpr(stmt.srcPtr)});")
+            }
         }
     }
 
@@ -272,6 +278,25 @@ class CCodeGenerator(private val model: BpfProgramModel) {
         is BpfExpr.CTypeCast -> "(${expr.cTypeName})${renderExpr(expr.operand)}"
         is BpfExpr.MapLookup -> "bpf_map_lookup_elem(&${expr.mapName}, &${renderExpr(expr.key)})"
         is BpfExpr.MapUpdate -> "bpf_map_update_elem(&${expr.mapName}, &${renderExpr(expr.key)}, &${renderExpr(expr.value)}, ${expr.flags})"
+        is BpfExpr.BufferByte -> "((__u8)${expr.bufferName}[${expr.index}])"
+        is BpfExpr.BufferMultiByte -> {
+            val cast = when (expr.readType) {
+                BpfScalar.U16 -> "__u16"
+                BpfScalar.U32 -> "__u32"
+                else -> expr.readType.cName
+            }
+            val deref = "(*($cast *)&${expr.bufferName}[${expr.offset}])"
+            if (expr.bigEndian) {
+                when (expr.readType) {
+                    BpfScalar.U16 -> "__bpf_ntohs($deref)"
+                    BpfScalar.U32 -> "__bpf_ntohl($deref)"
+                    else -> deref
+                }
+            } else {
+                deref
+            }
+        }
+        is BpfExpr.KretprobeReturn -> "(${expr.castType.cName})PT_REGS_RC(ctx)"
     }
 
     private fun renderLiteral(lit: BpfExpr.Literal): String {

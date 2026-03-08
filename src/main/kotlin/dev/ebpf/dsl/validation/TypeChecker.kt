@@ -54,6 +54,7 @@ class TypeChecker(private val model: BpfProgramModel) {
             }
             is BpfStmt.ExprStmt -> checkExpr(stmt.expr, program)
             is BpfStmt.MapDelete -> checkExpr(stmt.key, program)
+            is BpfStmt.ProbeReadBuf -> checkExpr(stmt.srcPtr, program)
         }
     }
 
@@ -125,7 +126,8 @@ class TypeChecker(private val model: BpfProgramModel) {
             }
             is BpfExpr.CTypeCast -> checkExpr(expr.operand, program)
             is BpfExpr.Literal, is BpfExpr.VarRef, is BpfExpr.Raw,
-            is BpfExpr.TracepointField, is BpfExpr.KprobeParam, is BpfExpr.RawTpArg -> { /* no sub-expressions */ }
+            is BpfExpr.TracepointField, is BpfExpr.KprobeParam, is BpfExpr.RawTpArg,
+            is BpfExpr.BufferByte, is BpfExpr.BufferMultiByte, is BpfExpr.KretprobeReturn -> { /* no sub-expressions */ }
         }
     }
 }
