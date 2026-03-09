@@ -20,6 +20,7 @@ fun ebpf(name: String, block: EbpfProgramBuilder.() -> Unit): BpfProgramModel {
 class EbpfProgramBuilder(private val name: String) {
     private var _license: String? = null
     private var _preamble: String? = null
+    private var _postamble: String? = null
     private var _targetKernel: KernelVersion = KernelVersion.V5_15
     private val _maps = mutableListOf<MapDecl>()
     private val _mapNames = mutableSetOf<String>()
@@ -41,6 +42,10 @@ class EbpfProgramBuilder(private val name: String) {
 
     fun preamble(code: String) {
         _preamble = code
+    }
+
+    fun postamble(code: String) {
+        _postamble = code
     }
 
     fun targetKernel(version: String) {
@@ -196,6 +201,7 @@ class EbpfProgramBuilder(private val name: String) {
             programs = _programs.toList(),
             structs = _structs.toSet(),
             preamble = preamble,
+            postamble = _postamble,
             targetKernel = _targetKernel,
         )
     }
