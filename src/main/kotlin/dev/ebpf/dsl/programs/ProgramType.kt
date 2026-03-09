@@ -65,4 +65,8 @@ sealed class ProgramType {
     data class SchedClassifier(val name: String) : ProgramType() {
         override val sectionPrefix = "struct_ops/$name"
     }
+
+    data object PerfEvent : ProgramType() {
+        override val sectionPrefix = "perf_event"
+    }
 }

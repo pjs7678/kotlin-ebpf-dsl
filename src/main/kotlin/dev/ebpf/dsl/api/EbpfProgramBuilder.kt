@@ -184,6 +184,10 @@ class EbpfProgramBuilder(private val name: String) {
         addProgram(ProgramType.SocketFilter, "socket_filter", block)
     }
 
+    fun perfEvent(name: String, block: ProgramBodyBuilder.() -> Unit) {
+        addProgram(ProgramType.PerfEvent, name, block)
+    }
+
     private fun addProgram(type: ProgramType, name: String, block: ProgramBodyBuilder.() -> Unit) {
         val bodyBuilder = ProgramBodyBuilder(type, _license, _maps)
         bodyBuilder.block()

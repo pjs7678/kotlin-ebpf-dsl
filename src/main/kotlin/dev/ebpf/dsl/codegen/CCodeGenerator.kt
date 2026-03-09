@@ -161,6 +161,7 @@ class CCodeGenerator(private val model: BpfProgramModel) {
         is ProgramType.RawTracepoint -> "struct bpf_raw_tracepoint_args *ctx"
         is ProgramType.CgroupSkb -> "struct __sk_buff *ctx"
         is ProgramType.SockOps -> "struct bpf_sock_ops *ctx"
+        is ProgramType.PerfEvent -> "struct bpf_perf_event_data *ctx"
         else -> "void *ctx"
     }
 
