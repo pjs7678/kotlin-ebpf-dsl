@@ -17,6 +17,7 @@ object HelperRegistry {
         ProgramType.Fentry::class,
         ProgramType.Fexit::class,
         ProgramType.Lsm::class,
+        ProgramType.PerfEvent::class,
     )
 
     private val NETWORKING: Set<KClass<out ProgramType>> = setOf(
