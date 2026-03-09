@@ -69,6 +69,12 @@ class CCodeGenerator(private val model: BpfProgramModel) {
             sb.appendLine()
         }
 
+        // Postamble (helper functions that reference struct types)
+        if (model.postamble != null) {
+            sb.appendLine(model.postamble)
+            sb.appendLine()
+        }
+
         // Programs
         for (prog in model.programs) {
             renderProgram(sb, prog)

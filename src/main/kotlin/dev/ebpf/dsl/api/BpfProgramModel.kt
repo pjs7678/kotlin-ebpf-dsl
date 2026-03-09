@@ -19,5 +19,7 @@ data class BpfProgramModel(
     val programs: List<ProgramDef>,
     val structs: Set<BpfStruct>,
     val preamble: String? = null,
+    /** Code emitted after struct/map definitions but before programs. */
+    val postamble: String? = null,
     val targetKernel: KernelVersion = KernelVersion.V5_15,
 )
