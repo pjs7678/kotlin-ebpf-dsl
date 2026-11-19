@@ -23,6 +23,11 @@ import dev.ebpf.dsl.types.BpfStruct
  * can happen on a different CPU/thread via interrupt context.
  *
  * Kernel: 5.8+ (BTF, cgroup_id, blk-mq), any architecture
+ *
+ * @param slotShift histogram slots are `log2(delta_ns >> slotShift)`. With the default 0 and
+ *   27 slots the last finite edge is 2^26 ns (~67 ms) and slower I/O is clamped into the last
+ *   slot; a shift of 10 moves the range to ~2 µs .. 2^36 ns (~69 s), which covers slow disks
+ *   and network block devices. `sum_ns` is always in nanoseconds.
  */
 
 object ReqKey : BpfStruct("req_key") {
@@ -34,7 +39,8 @@ object ReqInfo : BpfStruct("req_info") {
     val cgroupId by u64()
 }
 
-fun biolatency() = ebpf("biolatency") {
+fun biolatency(slotShift: Int = 0) = ebpf("biolatency") {
+    require(slotShift in 0..32) { "slotShift must be in 0..32" }
     license("GPL")
     targetKernel("5.3")
     preamble(LOG2_PREAMBLE)
@@ -90,12 +96,12 @@ fun biolatency() = ebpf("biolatency") {
             }
             val hval = bioLatency.lookup(hkey)
             ifNonNull(hval) { he ->
-                val slot = declareVar("slot", histSlot(deltaNs, 27))
+                val slot = declareVar("slot", histSlot(if (slotShift == 0) deltaNs else deltaNs shr literal(slotShift, BpfScalar.U32), 27))
                 he[HistValue.slots].at(slot).atomicAdd(literal(1u, BpfScalar.U64))
                 he[HistValue.count].atomicAdd(literal(1u, BpfScalar.U64))
                 he[HistValue.sumNs].atomicAdd(deltaNs)
             }.elseThen {
-                val slot2 = declareVar("slot2", histSlot(deltaNs, 27))
+                val slot2 = declareVar("slot2", histSlot(if (slotShift == 0) deltaNs else deltaNs shr literal(slotShift, BpfScalar.U32), 27))
                 val newHval = stackVar(HistValue) {
                     it[HistValue.count] = literal(1u, BpfScalar.U64)
                     it[HistValue.sumNs] = deltaNs

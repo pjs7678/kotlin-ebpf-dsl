@@ -167,6 +167,23 @@ class ToolsTest {
     }
 
     @Test
+    fun `biolatency default keeps nanosecond slots`() {
+        val c = biolatency().generateC()
+        assertThat(c).doesNotContain(">> 10")
+    }
+
+    @Test
+    fun `biolatency slotShift buckets in coarser units and still validates`() {
+        val prog = biolatency(slotShift = 10)
+        assertThat(prog.validate().errors).isEmpty()
+        val c = prog.generateC()
+        // both slot computations (the clamp ternary evaluates log2l twice) see the shifted value
+        assertThat(Regex("""log2l\(\(delta_ns >> 10U\)\)""").findAll(c).count()).isEqualTo(2)
+        // sum stays in ns
+        assertThat(c).contains("sum_ns")
+    }
+
+    @Test
     fun `biolatency has 3 maps`() {
         val c = biolatency().generateC()
         // req_info (HASH), bio_latency (LRU_HASH), bio_count (LRU_HASH)
